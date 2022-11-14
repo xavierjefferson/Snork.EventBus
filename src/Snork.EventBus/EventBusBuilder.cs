@@ -52,7 +52,7 @@ namespace Snork.EventBus
         /// <summary>
         ///     Default: true
         /// </summary>
-        public EventBusBuilder WithSendSubscriberExceptionEvent(bool sendSubscriberExceptionEvent)
+        public EventBusBuilder WithSendSubscriberExceptionMessage(bool sendSubscriberExceptionEvent)
         {
             SendSubscriberExceptionEvent = sendSubscriberExceptionEvent;
             return this;
@@ -61,7 +61,7 @@ namespace Snork.EventBus
         /// <summary>
         ///     Default: true
         /// </summary>
-        public EventBusBuilder WithSendNoSubscriberEvent(bool sendNoSubscriberEvent)
+        public EventBusBuilder WithSendNoSubscriberMessage(bool sendNoSubscriberEvent)
         {
             SendNoSubscriberEvent = sendNoSubscriberEvent;
             return this;
