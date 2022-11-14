@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32922.545
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snork.EventBus", "src\Snork.EventBus\Snork.EventBus.csproj", "{BF17A5CD-1463-4AE1-B68F-33E40D8AEB18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snork.EventBus", "Snork.EventBus\Snork.EventBus.csproj", "{BF17A5CD-1463-4AE1-B68F-33E40D8AEB18}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snork.EventBus.Tests", "src\Snork.EventBus.Tests\Snork.EventBus.Tests.csproj", "{FAF600EA-2139-445C-B0AB-60CBADD85F0E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snork.EventBus.Tests", "Snork.EventBus.Tests\Snork.EventBus.Tests.csproj", "{FAF600EA-2139-445C-B0AB-60CBADD85F0E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
