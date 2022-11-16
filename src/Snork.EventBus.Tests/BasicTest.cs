@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -24,8 +25,7 @@ namespace Snork.EventBus.Tests
             var stringMessageSubscriber = new StringMessageSubscriber();
             var message = "Hello";
 
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
             EventBus.Register(stringMessageSubscriber);
 
@@ -88,7 +88,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestPostWithTwoSubscriber()
         {
-            var test2 = new BasicTest();
+            var test2 = new BasicTest(Output);
             EventBus.Register(this);
             EventBus.Register(test2);
             var message = "Hello";
@@ -159,7 +159,7 @@ namespace Snork.EventBus.Tests
         public void TestPostOnDifferentEventBus()
         {
             EventBus.Register(this);
-            new EventBus().Post("Hello");
+            new EventBusBuilder().WithLogger(Logger).Build().Post("Hello");
             Assert.Equal(0, CountStringMessage);
         }
 
@@ -204,16 +204,16 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestHasSubscriberForMessageImplementedInterface()
         {
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.False(EventBus.HasSubscriberForMessage(typeof(List<object>)));
 
-            object subscriber = new CharSequenceSubscriber();
+            object subscriber = new IEnumerableSubscriber();
             EventBus.Register(subscriber);
-            Assert.True(EventBus.HasSubscriberForMessage(typeof(string)));
-            Assert.True(EventBus.HasSubscriberForMessage(typeof(IEnumerable<char>)));
+            Assert.True(EventBus.HasSubscriberForMessage(typeof(List<object>)));
+            Assert.True(EventBus.HasSubscriberForMessage(typeof(IEnumerable<object>)));
 
             EventBus.Unregister(subscriber);
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(string)));
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(IEnumerable<char>)));
+            Assert.False(EventBus.HasSubscriberForMessage(typeof(List<object>)));
+            Assert.False(EventBus.HasSubscriberForMessage(typeof(IEnumerable<object>)));
         }
 
         [Subscribe]
@@ -254,6 +254,14 @@ namespace Snork.EventBus.Tests
             public void Dummy()
             {
             }
+
+            public WithIndex(ITestOutputHelper output) : base(output)
+            {
+            }
+        }
+
+        public BasicTest(ITestOutputHelper output ) : base(output )
+        {
         }
     }
 }

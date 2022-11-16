@@ -5,16 +5,18 @@ namespace Snork.EventBus
     public sealed class PendingPost
     {
         private static readonly Queue<PendingPost> PendingPostPool = new Queue<PendingPost>();
-        internal PendingPost? Next { get; set; }
 
         private PendingPost(object message, Subscription subscription)
         {
-            this.Message = message;
-            this.Subscription = subscription;
+            Message = message;
+            Subscription = subscription;
         }
+
+        internal PendingPost? Next { get; set; }
 
         public object? Message { get; private set; }
         public Subscription? Subscription { get; private set; }
+
 
         public static PendingPost ObtainPendingPost(Subscription subscription, object message)
         {
@@ -29,18 +31,19 @@ namespace Snork.EventBus
                     pendingPost.Next = null;
                     return pendingPost;
                 }
-            }
 
-            return new PendingPost(message, subscription);
+                return new PendingPost(message, subscription);
+            }
         }
 
         public static void ReleasePendingPost(PendingPost pendingPost)
         {
-            pendingPost.Message = null;
-            pendingPost.Subscription = null;
-            pendingPost.Next = null;
             lock (PendingPostPool)
             {
+                pendingPost.Message = null;
+                pendingPost.Subscription = null;
+                pendingPost.Next = null;
+
                 PendingPostPool.Enqueue(pendingPost);
             }
         }

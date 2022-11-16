@@ -1,8 +1,10 @@
 
 using System;
+using System.Collections.Generic;
 using Snork.EventBus.Tests.Messages;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -11,9 +13,9 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestGenericMessageAndSubscriber()
         {
-            var genericSubscriber = new GenericMessageSubscriber<int>(this);
+            var genericSubscriber = new GenericMessageSubscriber<IntTestMessage>(this);
             EventBus.Register(genericSubscriber);
-            EventBus.Post(new GenericMessage<int>());
+            EventBus.Post(new IntTestMessage(10));
             AssertMessageCount(1);
         }
 
@@ -24,16 +26,16 @@ namespace Snork.EventBus.Tests
             EventBus.Register(genericSubscriber);
             EventBus.Post(new IntTestMessage(42));
             EventBus.Post("Type erasure!");
-            AssertMessageCount(2);
+            AssertMessageCount(1);
         }
 
         [Fact]
         public void TestGenericMessageAndSubscriber_BaseType()
         {
-            var genericSubscriber = new GenericNumberMessageSubscriber<float>(this);
+            var genericSubscriber = new GenericEnumerableMessageSubscriber<float>(this);
             EventBus.Register(genericSubscriber);
-            EventBus.Post(Convert.ToSingle(42));
-            EventBus.Post(Convert.ToDouble(23));
+            EventBus.Post(new[] { Convert.ToSingle(42) });
+            EventBus.Post(new List<float> { 23f });
             AssertMessageCount(2);
             EventBus.Post("Not the same base type");
             AssertMessageCount(2);
@@ -44,16 +46,15 @@ namespace Snork.EventBus.Tests
         {
             var genericSubscriber = new GenericFloatMessageSubscriber(this);
             EventBus.Register(genericSubscriber);
-            EventBus.Post(Convert.ToSingle(42));
-            EventBus.Post(Convert.ToDouble(77));
+            EventBus.Post(new[] { Convert.ToSingle(42) });
+            EventBus.Post(new List<float> { 23f });
             AssertMessageCount(2);
             EventBus.Post("Not the same base type");
             AssertMessageCount(2);
         }
-    }
 
-    public class GenericMessage<T>
-    {
-        public T Value { get; }
+        public GenericsTest(ITestOutputHelper output) : base(output)
+        {
+        }
     }
 }

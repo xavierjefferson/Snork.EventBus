@@ -1,5 +1,6 @@
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -11,7 +12,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestThrowSubscriberException()
         {
-            EventBus = EventBus.Builder().WithThrowSubscriberException(true).Build();
+            EventBus = EventBus.Builder().WithThrowSubscriberException(true).WithLogger(Logger).Build();
             EventBus.Register(new SubscriberExceptionMessageTracker(this));
             EventBus.Register(new ThrowingSubscriber());
             Assert.Throws<EventBusException>(() => { EventBus.Post("Foo"); });
@@ -20,7 +21,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestDoNotSendSubscriberExceptionMessage()
         {
-            EventBus = EventBus.Builder().WithLogSubscriberExceptions(false).WithSendSubscriberExceptionMessage(false)
+            EventBus = EventBus.Builder().WithLogSubscriberExceptions(false).WithSendSubscriberExceptionMessage(false).WithLogger(Logger)
                 .Build();
             EventBus.Register(new SubscriberExceptionMessageTracker(this));
             EventBus.Register(new ThrowingSubscriber());
@@ -31,7 +32,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestDoNotSendNoSubscriberMessage()
         {
-            EventBus = EventBus.Builder().WithLogNoSubscriberMessages(false).WithSendNoSubscriberMessage(false).Build();
+            EventBus = EventBus.Builder().WithLogNoSubscriberMessages(false).WithSendNoSubscriberMessage(false).WithLogger(Logger).Build();
             EventBus.Register(new NoSubscriberMessageTracker(this));
             EventBus.Post("Foo");
             AssertMessageCount(0);
@@ -40,7 +41,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestInstallDefaultEventBus()
         {
-            var builder = EventBus.Builder();
+            var builder = EventBus.Builder().WithLogger(Logger);
             Assert.Throws<EventBusException>(() =>
             {
                 // Either this should throw when another unit test got the default message bus...
@@ -55,9 +56,13 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestMessageInheritance()
         {
-            EventBus = EventBus.Builder().WithMessageInheritance(false).Build();
+            EventBus = EventBus.Builder().WithMessageInheritance(false).WithLogger(Logger).Build();
             EventBus.Register(new ThrowingSubscriber());
             EventBus.Post("Foo");
+        }
+
+        public BuilderTest(ITestOutputHelper output ) : base(output)
+        {
         }
     }
 }

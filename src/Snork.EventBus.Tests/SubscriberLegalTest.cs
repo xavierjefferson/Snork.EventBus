@@ -16,6 +16,7 @@
 
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -101,5 +102,8 @@ namespace Snork.EventBus.Tests
         //        public static void OnMessage(string message) {
         //        }
         //    }
+        public SubscriberLegalTest(ITestOutputHelper output) : base(output)
+        {
+        }
     }
 }

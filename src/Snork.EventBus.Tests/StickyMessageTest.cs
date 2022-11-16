@@ -2,6 +2,7 @@ using System.Threading;
 using Snork.EventBus.Tests.Messages;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -166,6 +167,10 @@ namespace Snork.EventBus.Tests
         public virtual void OnMessage(IntTestMessage message)
         {
             TrackMessage(message);
+        }
+
+        public StickyMessageTest(ITestOutputHelper output) : base(output)
+        {
         }
     }
 }

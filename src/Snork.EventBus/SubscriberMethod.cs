@@ -37,11 +37,10 @@ namespace Snork.EventBus
         {
             if (other == this) return true;
 
-            if (other is SubscriberMethod)
+            if (other is SubscriberMethod otherSubscriberMethod)
             {
-                CheckMethodString();
-                var otherSubscriberMethod = (SubscriberMethod)other;
-                otherSubscriberMethod.CheckMethodString();
+                GenerateMethodString();
+                otherSubscriberMethod.GenerateMethodString();
                 // Don't use method.equals because of http://code.google.com/p/android/issues/detail?id=7811#c6
                 return MethodString.Equals(otherSubscriberMethod.MethodString);
             }
@@ -51,7 +50,7 @@ namespace Snork.EventBus
 
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        private void CheckMethodString()
+        private void GenerateMethodString()
         {
             if (MethodString == null)
             {

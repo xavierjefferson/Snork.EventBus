@@ -4,13 +4,14 @@
 using Snork.EventBus.Tests.Messages;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
 
     public class InheritanceDisabledTest : InheritanceTestBase
     {
-        public InheritanceDisabledTest()
+        public InheritanceDisabledTest(ITestOutputHelper output) : base(output)
         {
             setUp();
         }
@@ -18,7 +19,7 @@ namespace Snork.EventBus.Tests
 
         public void setUp()
         {
-            EventBus = EventBus.Builder().WithMessageInheritance(false).Build();
+            EventBus = EventBus.Builder().WithLogger(Logger).WithMessageInheritance(false).Build();
         }
 
         [Fact]
@@ -68,7 +69,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestSubscriberClassHierarchy()
         {
-            var subscriber = new InheritanceDisabledSubclassTest();
+            var subscriber = new InheritanceDisabledSubclassTest(Output);
             EventBus.Register(subscriber);
 
             EventBus.Post("Hello");
@@ -89,7 +90,7 @@ namespace Snork.EventBus.Tests
         [Fact]
         public void TestSubscriberClassHierarchyWithoutNewSubscriberMethod()
         {
-            var subscriber = new InheritanceDisabledSubclassNoMethodTest();
+            var subscriber = new InheritanceDisabledSubclassNoMethodTest(Output);
             EventBus.Register(subscriber);
 
             EventBus.Post("Hello");
@@ -103,36 +104,6 @@ namespace Snork.EventBus.Tests
             Assert.Equal(0, subscriber.CountObjectMessage);
             Assert.Equal(1, subscriber.CountMyMessage);
             Assert.Equal(1, subscriber.CountMyMessageExtended);
-        }
-
-        [Subscribe]
-        public void OnMessage(object message)
-        {
-            CountObjectMessage++;
-        }
-
-        [Subscribe]
-        public virtual void OnMessage(MyInheritanceMessage message)
-        {
-            CountMyMessage++;
-        }
-
-        [Subscribe]
-        public void OnMessage(MyInheritanceMessageExtended message)
-        {
-            CountMyMessageExtended++;
-        }
-
-        [Subscribe]
-        public void OnMessage(MyInheritanceMessageInterface message)
-        {
-            CountMyMessageInterface++;
-        }
-
-        [Subscribe]
-        public void OnMessage(MyInheritanceMessageInterfaceExtended message)
-        {
-            CountMyMessageInterfaceExtended++;
         }
     }
 }

@@ -28,8 +28,4 @@
     <ProjectReference Include="..\Snork.EventBus\Snork.EventBus.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Handlers\" />
-  </ItemGroup>
-
 </Project>

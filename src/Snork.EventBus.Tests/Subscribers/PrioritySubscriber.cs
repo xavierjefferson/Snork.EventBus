@@ -2,9 +2,9 @@ using Snork.EventBus.Tests.Messages;
 
 namespace Snork.EventBus.Tests.Subscribers
 {
-    public class PrioSubscriber : MessageOrderedPriorityTestSubscriberBase
+    public class PrioritySubscriber : MessageOrderedPriorityTestSubscriberBase
     {
-        public PrioSubscriber(TestBase text) : base(text)
+        public PrioritySubscriber(TestBase text) : base(text)
         {
         }
 
@@ -48,7 +48,7 @@ namespace Snork.EventBus.Tests.Subscribers
         [Subscribe(ThreadModeEnum.Main)]
         public virtual void OnMessageMainThreadP0(IntTestMessage message)
         {
-            HandleMessage(0, message);
+            HandleMessage(SubscribeAttribute.DefaultPriority, message);
         }
 
         [Subscribe(ThreadModeEnum.Main, priority: 1)]
@@ -66,7 +66,7 @@ namespace Snork.EventBus.Tests.Subscribers
         [Subscribe(ThreadModeEnum.Background)]
         public virtual void OnMessageBackgroundThreadP0(int message)
         {
-            HandleMessage(0, message);
+            HandleMessage(SubscribeAttribute.DefaultPriority, message);
         }
 
         [Subscribe(ThreadModeEnum.Background, priority: -1)]

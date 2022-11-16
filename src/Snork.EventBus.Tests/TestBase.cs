@@ -19,14 +19,15 @@ using System.Collections.Concurrent;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    /**
- * @author Markus Junginger, greenrobot
- */
-    public abstract class TestBase
+    public abstract class TestBase : LoggingTestBase
     {
+       
+
+
         /**
      * Activates long(er) running tests e.g. testing multi-threading more thoroughly.
      */
@@ -37,12 +38,10 @@ namespace Snork.EventBus.Tests
         protected volatile object LastMessage;
         protected volatile Thread LastThread;
 
-        protected TestBase() : this(true)
-        {
-        }
 
-        protected TestBase(bool collectMessagesReceived)
+        protected TestBase(ITestOutputHelper output, bool collectMessagesReceived = true) : base(output)
         {
+           
             if (collectMessagesReceived)
                 MessagesReceived = new ConcurrentBag<object>();
             else
@@ -62,7 +61,12 @@ namespace Snork.EventBus.Tests
         public void setUpBase()
         {
             EventBus.ClearCaches();
-            EventBus = new EventBus();
+            GetInitialEventBus();
+        }
+
+        public virtual void GetInitialEventBus()
+        {
+            EventBus = new EventBusBuilder().WithLogger(Logger).Build();
         }
 
         protected void WaitForMessageCount(int expectedCount, int maxMillis)

@@ -1,6 +1,7 @@
 using System.Threading;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -68,6 +69,10 @@ namespace Snork.EventBus.Tests
 
                 done.Signal();
             }
+        }
+
+        public CancelMessageDeliveryTest(ITestOutputHelper output) : base(output)
+        {
         }
     }
 }

@@ -1,3 +1,5 @@
+using Snork.EventBus.Tests.Messages;
+
 namespace Snork.EventBus.Tests.Subscribers
 {
     public class GenericMessageSubscriber<T> : OuterTestSubscriberBase
@@ -7,7 +9,7 @@ namespace Snork.EventBus.Tests.Subscribers
         }
 
         [Subscribe]
-        public void OnGenericMessage(GenericMessage<T> message)
+        public void OnGenericMessage(T message)
         {
             OuterTest.TrackMessage(message);
         }

@@ -13,7 +13,7 @@ namespace Snork.EventBus
 
         private readonly PendingPostQueue _queue;
 
-        private volatile bool _executorRunning;
+        private readonly object _mutex = new object();
 
         public BackgroundPoster(EventBus eventBus)
         {
@@ -27,49 +27,41 @@ namespace Snork.EventBus
             lock (this)
             {
                 _queue.Enqueue(pendingPost);
-                if (!_executorRunning)
-                {
-                    _executorRunning = true;
-                    _eventBus.Executor.Execute(this);
-                }
+                if (Monitor.TryEnter(_mutex))
+                    try
+                    {
+                        _eventBus.Executor.Execute(this);
+                    }
+                    finally
+                    {
+                        Monitor.Exit(_mutex);
+                    }
             }
         }
 
-
         public void Run()
         {
+            Monitor.Enter(_mutex);
             try
             {
-                try
-                {
-                    while (true)
+                while (true)
+                    try
                     {
                         var pendingPost = _queue.Poll(1000);
-                        if (pendingPost == null)
-                            lock (this)
-                            {
-                                // Check again, this time in synchronized
-                                pendingPost = _queue.Poll();
-                                if (pendingPost == null)
-                                {
-                                    _executorRunning = false;
-                                    return;
-                                }
-                            }
+                        if (pendingPost == null) return;
 
                         var result = _eventBus.InvokeSubscriber(pendingPost);
-                        if (result != null) _eventBus.Post(result);
                     }
-                }
-                catch (OperationCanceledException exception)
-                {
-                    _eventBus.Logger.LogWarning(exception, Thread.CurrentThread.Name + " was canceled");
-                }
+                    catch (OperationCanceledException exception)
+                    {
+                        _eventBus.Logger.LogWarning(exception, Thread.CurrentThread.Name + " was canceled");
+                    }
             }
             finally
             {
-                _executorRunning = false;
+                Monitor.Exit(_mutex);
             }
+
         }
     }
 }

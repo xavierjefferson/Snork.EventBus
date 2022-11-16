@@ -5,7 +5,8 @@ namespace Snork.EventBus
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public class SubscribeAttribute : Attribute
     {
-        public SubscribeAttribute(ThreadModeEnum threadMode = ThreadModeEnum.Posting, bool sticky = false, int priority = 5)
+        public const int DefaultPriority = 5;
+        public SubscribeAttribute(ThreadModeEnum threadMode = ThreadModeEnum.Posting, bool sticky = false, int priority = DefaultPriority)
         {
             ThreadMode = threadMode;
             Sticky = sticky;

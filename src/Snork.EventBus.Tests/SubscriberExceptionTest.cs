@@ -17,6 +17,7 @@
 using System;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -60,6 +61,10 @@ namespace Snork.EventBus.Tests
         public virtual void OnMessage(SubscriberExceptionMessage message)
         {
             TrackMessage(message);
+        }
+
+        public SubscriberExceptionTest(ITestOutputHelper output ) : base(output )
+        {
         }
     }
 }

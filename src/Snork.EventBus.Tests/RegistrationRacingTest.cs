@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -102,6 +103,10 @@ namespace Snork.EventBus.Tests
             {
                 MessageCount++;
             }
+        }
+
+        public RegistrationRacingTest(ITestOutputHelper output) : base(output)
+        {
         }
     }
 }

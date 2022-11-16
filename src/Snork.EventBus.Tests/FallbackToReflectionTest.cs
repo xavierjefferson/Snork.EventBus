@@ -1,12 +1,13 @@
 using Snork.EventBus.Tests.Subscribers;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
     public class FallbackToReflectionTest : TestBase
     {
-        public FallbackToReflectionTest() : base(true)
-        {
-        }
+        //public FallbackToReflectionTest() : base(true)
+        //{
+        //}
 
         //[Fact]
         //public void TestAnonymousSubscriberClass() {
@@ -164,5 +165,8 @@ namespace Snork.EventBus.Tests
         //        OuterTest.TrackMessage(any);
         //    }
         //}
+        public FallbackToReflectionTest(ITestOutputHelper output) : base(output)
+        {
+        }
     }
 }

@@ -1,6 +1,7 @@
 // Need to use upper class or Android test runner does not pick it up
 
 using Snork.EventBus.Tests.Messages;
+using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
@@ -17,6 +18,10 @@ namespace Snork.EventBus.Tests
         public override void TestMessageClassHierarchy()
         {
             // TODO fix test in super, then remove this
+        }
+
+        public InheritanceDisabledSubclassTest(ITestOutputHelper output) : base(output)
+        {
         }
     }
 }
