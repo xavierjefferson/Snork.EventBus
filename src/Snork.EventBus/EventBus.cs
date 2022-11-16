@@ -42,7 +42,7 @@ namespace Snork.EventBus
         private readonly bool _sendSubscriberExceptionMessage;
         private readonly Dictionary<Type, object> _stickyMessages;
         private readonly SubscriberMethodFinder? _subscriberMethodFinder;
-        private readonly Dictionary<Type, ConcurrentList<Subscription>> _subscriptionsByEventType;
+        private readonly Dictionary<Type, ConcurrentList<Subscription>> _subscriptionsByMessageType;
         private readonly bool _throwSubscriberException;
         private readonly Dictionary<object, List<Type>> _typesBySubscriber;
 
@@ -57,7 +57,7 @@ namespace Snork.EventBus
         public EventBus(EventBusBuilder builder)
         {
             Logger = builder.Logger;
-            _subscriptionsByEventType = new Dictionary<Type, ConcurrentList<Subscription>>();
+            _subscriptionsByMessageType = new Dictionary<Type, ConcurrentList<Subscription>>();
             _typesBySubscriber = new Dictionary<object, List<Type>>();
             _stickyMessages = new Dictionary<Type, object>();
             _mainThreadSupport = builder.MainThreadSupport;
@@ -138,13 +138,13 @@ namespace Snork.EventBus
         {
             var messageType = subscriberMethod.EventType;
             var newSubscription = new Subscription(subscriber, subscriberMethod);
-            var subscriptions = _subscriptionsByEventType.ContainsKey(messageType)
-                ? _subscriptionsByEventType[messageType]
+            var subscriptions = _subscriptionsByMessageType.ContainsKey(messageType)
+                ? _subscriptionsByMessageType[messageType]
                 : default;
             if (subscriptions == null)
             {
                 subscriptions = new ConcurrentList<Subscription>();
-                _subscriptionsByEventType[messageType] = subscriptions;
+                _subscriptionsByMessageType[messageType] = subscriptions;
             }
             else
             {
@@ -159,15 +159,18 @@ namespace Snork.EventBus
             }
             else
             {
+                
                 var size = subscriptions.Count();
-                foreach (var item in subscriptions.Select((subscription, index) =>
-                             new { Subscription = subscription, Index = index }))
-                    if (item.Index == size - 1 ||
-                        subscriberMethod.Priority > item.Subscription.SubscriberMethod.Priority)
+                
+                for (int i = 0; i <= size; i++)
+                {
+                    if (i == size || subscriberMethod.Priority > subscriptions[i].SubscriberMethod.Priority)
                     {
-                        subscriptions.Insert(item.Index, newSubscription);
+                        subscriptions.Insert(i, newSubscription);
                         break;
                     }
+                }
+                
             }
 
             List<Type>? subscribedMessageTypes;
@@ -195,7 +198,7 @@ namespace Snork.EventBus
                     foreach (var entry in _stickyMessages)
                     {
                         var candidateEventType = entry.Key;
-                        if (messageType.IsAssignableFrom(candidateEventType))
+                        if (messageType.IsAssignableFromExt(candidateEventType))
                         {
                             var stickyEvent = entry.Value;
                             CheckPostStickyEventToSubscription(newSubscription, stickyEvent);
@@ -244,8 +247,8 @@ namespace Snork.EventBus
         {
             lock (_mutex)
             {
-                var subscriptions = _subscriptionsByEventType.ContainsKey(messageType)
-                    ? _subscriptionsByEventType[messageType]
+                var subscriptions = _subscriptionsByMessageType.ContainsKey(messageType)
+                    ? _subscriptionsByMessageType[messageType]
                     : default;
                 if (subscriptions != null) subscriptions.RemoveAll(i => i.Subscriber == subscriber);
             }
@@ -304,7 +307,7 @@ namespace Snork.EventBus
         ///     Canceling is restricted to message handling methods running in posting thread
         ///     <see cref="ThreadModeEnum.Posting" />.
         /// </summary>
-        public void CancelEventDelivery(object? message)
+        public void CancelMessageDelivery(object? message)
         {
             var postingState = _currentPostingThreadState.Value;
             if (!postingState.IsPosting)
@@ -431,12 +434,12 @@ namespace Snork.EventBus
             }
         }
 
-        public bool HasSubscriberForEvent<T>()
+        public bool HasSubscriberForMessage<T>()
         {
-            return HasSubscriberForEvent(typeof(T));
+            return HasSubscriberForMessage(typeof(T));
         }
 
-        public bool HasSubscriberForEvent(Type messageType)
+        public bool HasSubscriberForMessage(Type messageType)
         {
             var messageTypes = LookupAllMessageTypes(messageType);
 
@@ -446,8 +449,8 @@ namespace Snork.EventBus
                 ConcurrentList<Subscription>? subscriptions;
                 lock (_mutex)
                 {
-                    subscriptions = _subscriptionsByEventType.ContainsKey(type)
-                        ? _subscriptionsByEventType[type]
+                    subscriptions = _subscriptionsByMessageType.ContainsKey(type)
+                        ? _subscriptionsByMessageType[type]
                         : default;
                 }
 
@@ -488,14 +491,15 @@ namespace Snork.EventBus
             ConcurrentList<Subscription>? subscriptions;
             lock (_mutex)
             {
-                subscriptions = _subscriptionsByEventType.ContainsKey(messageType)
-                    ? _subscriptionsByEventType[messageType]
+                subscriptions = _subscriptionsByMessageType.ContainsKey(messageType)
+                    ? _subscriptionsByMessageType[messageType]
                     : default;
             }
 
             if (subscriptions != null && subscriptions.Any())
             {
-                foreach (var subscription in subscriptions.ToList())
+                var orderedSubscriptions = subscriptions.OrderBy(i=>i.SubscriberMethod.Priority).ToList();
+                foreach (var subscription in orderedSubscriptions)
                 {
                     postingState.Message = message;
                     postingState.Subscription = subscription;

@@ -9,7 +9,7 @@ namespace Snork.EventBus.Meta
         bool ShouldCheckSuperclass { get; }
         Type? SubscriberType { get; }
 
-        List<SubscriberMethod> GetSubscriberMethods();
+        List<SubscriberMethod> GetSubscriberMethods(int generation);
 
         ISubscriberInfo? GetSuperSubscriberInfo();
     }

@@ -35,10 +35,10 @@ namespace Snork.EventBus.Tests
                 var threads = startThreads();
                 registeredLatch.Wait();
                 EventBus.Post("42");
-                canUnregisterLatch.AddCount(-1);
+                canUnregisterLatch.Signal();
                 for (var t = 0; t < THREAD_COUNT; t++)
                 {
-                    int eventCount = threads[t].EventCount;
+                    var eventCount = threads[t].MessageCount;
                     if (eventCount != 1)
                         Assert.True(false,
                             "Failed in iteration " + i + ": thread #" + t + " has message count of " + eventCount);
@@ -67,22 +67,23 @@ namespace Snork.EventBus.Tests
         {
             private readonly RegistrationRacingTest _outer;
             private volatile int _eventCount;
-            public int EventCount
-            {
-                get { return _eventCount;}
-                set { _eventCount = value; }
-            }
 
             public SubscriberThread(RegistrationRacingTest outer)
             {
                 _outer = outer;
             }
 
+            public int MessageCount
+            {
+                get => _eventCount;
+                set => _eventCount = value;
+            }
+
             public void Run()
             {
-                _outer.countDownAndAwaitLatch(_outer.startLatch, 10);
+                _outer.CountDownAndAwaitLatch(_outer.startLatch, 10);
                 _outer.EventBus.Register(this);
-                _outer.registeredLatch.AddCount(-1);
+                _outer.registeredLatch.Signal();
                 try
                 {
                     _outer.canUnregisterLatch.Wait();
@@ -93,16 +94,14 @@ namespace Snork.EventBus.Tests
                 }
 
                 _outer.EventBus.Unregister(this);
-                _outer.unregisteredLatch.AddCount(-1);
+                _outer.unregisteredLatch.Signal();
             }
 
             [Subscribe]
             public virtual void OnMessage(string message)
             {
-                EventCount++;
+                MessageCount++;
             }
-
-           
         }
     }
 }

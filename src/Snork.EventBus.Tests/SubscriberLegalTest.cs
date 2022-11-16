@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 
 namespace Snork.EventBus.Tests
@@ -29,7 +30,7 @@ namespace Snork.EventBus.Tests
             EventBus.Register(this);
             EventBus.Post("42");
             EventBus.Unregister(this);
-            Assert.Equal(1, eventCount);
+            Assert.Equal(1, MessageCount);
         }
 
         // With Build time verification, some of these tests are obsolete (and cause problems during Build)
@@ -56,7 +57,7 @@ namespace Snork.EventBus.Tests
             EventBus.Register(new AbstractImpl(this));
 
             EventBus.Post("42");
-            Assert.Equal(1, eventCount);
+            Assert.Equal(1, MessageCount);
         }
 
         [Subscribe]
@@ -71,7 +72,7 @@ namespace Snork.EventBus.Tests
         //        }
         //    }
 
-        public abstract class Abstract : OuterTestHandlerBase
+        public abstract class Abstract : OuterTestSubscriberBase
         {
             protected Abstract(TestBase outerTest) : base(outerTest)
             {

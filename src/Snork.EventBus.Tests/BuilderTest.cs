@@ -1,4 +1,4 @@
-using System;
+using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 
 namespace Snork.EventBus.Tests
@@ -14,15 +14,7 @@ namespace Snork.EventBus.Tests
             EventBus = EventBus.Builder().WithThrowSubscriberException(true).Build();
             EventBus.Register(new SubscriberExceptionMessageTracker(this));
             EventBus.Register(new ThrowingSubscriber());
-            try
-            {
-                EventBus.Post("Foo");
-                Assert.True(false, "Should have thrown");
-            }
-            catch (EventBusException e)
-            {
-                // Expected
-            }
+            Assert.Throws<EventBusException>(() => { EventBus.Post("Foo"); });
         }
 
         [Fact]
@@ -33,7 +25,7 @@ namespace Snork.EventBus.Tests
             EventBus.Register(new SubscriberExceptionMessageTracker(this));
             EventBus.Register(new ThrowingSubscriber());
             EventBus.Post("Foo");
-            assertEventCount(0);
+            AssertMessageCount(0);
         }
 
         [Fact]
@@ -42,14 +34,14 @@ namespace Snork.EventBus.Tests
             EventBus = EventBus.Builder().WithLogNoSubscriberMessages(false).WithSendNoSubscriberMessage(false).Build();
             EventBus.Register(new NoSubscriberMessageTracker(this));
             EventBus.Post("Foo");
-            assertEventCount(0);
+            AssertMessageCount(0);
         }
 
         [Fact]
         public void TestInstallDefaultEventBus()
         {
             var builder = EventBus.Builder();
-            try
+            Assert.Throws<EventBusException>(() =>
             {
                 // Either this should throw when another unit test got the default message bus...
                 EventBus = builder.InstallDefaultEventBus();
@@ -57,56 +49,15 @@ namespace Snork.EventBus.Tests
 
                 // ...or this should throw
                 EventBus = builder.InstallDefaultEventBus();
-                Assert.True(false, "Should have thrown");
-            }
-            catch (EventBusException e)
-            {
-                // Expected
-            }
+            });
         }
 
         [Fact]
-        public void TestEventInheritance()
+        public void TestMessageInheritance()
         {
             EventBus = EventBus.Builder().WithMessageInheritance(false).Build();
             EventBus.Register(new ThrowingSubscriber());
             EventBus.Post("Foo");
-        }
-
-        public class SubscriberExceptionMessageTracker : OuterTestHandlerBase
-        {
-            public SubscriberExceptionMessageTracker(TestBase outerTest) : base(
-                outerTest)
-            {
-            }
-
-            [Subscribe]
-            public virtual void OnMessage(SubscriberExceptionMessage message)
-            {
-                OuterTest.TrackMessage(message);
-            }
-        }
-
-        public class NoSubscriberMessageTracker : OuterTestHandlerBase
-        {
-            public NoSubscriberMessageTracker(TestBase outerTest) : base(outerTest)
-            {
-            }
-
-            [Subscribe]
-            public virtual void OnMessage(NoSubscriberMessage message)
-            {
-                OuterTest.TrackMessage(message);
-            }
-        }
-
-        public class ThrowingSubscriber
-        {
-            [Subscribe]
-            public virtual void OnMessage(object message)
-            {
-                throw new Exception();
-            }
         }
     }
 }

@@ -50,8 +50,8 @@ namespace Snork.EventBus.Util
             foreach (var map in ExceptionToMessageIdMap)
             {
                 var candidate = map.Key;
-                if (candidate.IsAssignableFrom(exceptionType))
-                    if (closestType == null || closestType.IsAssignableFrom(candidate))
+                if (candidate.IsAssignableFromExt(exceptionType))
+                    if (closestType == null || closestType.IsAssignableFromExt(candidate))
                     {
                         closestType = candidate;
                         resId = map.Value;

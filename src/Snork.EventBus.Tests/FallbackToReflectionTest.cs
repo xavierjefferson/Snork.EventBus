@@ -1,4 +1,4 @@
-using Xunit;
+using Snork.EventBus.Tests.Subscribers;
 
 namespace Snork.EventBus.Tests
 {
@@ -12,13 +12,13 @@ namespace Snork.EventBus.Tests
         //public void TestAnonymousSubscriberClass() {
         //    object subscriber = new object() {
         //        [Subscribe()]            public virtual void OnMessage(string message) {
-        //        trackEvent(message);
+        //        trackMessage(message);
         //    }
         //    };
         //    EventBus.Register(subscriber);
 
         //    EventBus.Post("Hello");
-        //    Assert.Equal("Hello", lastEvent);
+        //    Assert.Equal("Hello", lastMessage);
         //    Assert.Equal(1, eventsReceived.Count);
         //}
 
@@ -26,13 +26,13 @@ namespace Snork.EventBus.Tests
         //public void TestAnonymousSubscriberClassWithPublicSuperclass() {
         //    object subscriber = new PublicClass() {
         //        [Subscribe()]            public virtual void OnMessage(string message) {
-        //        trackEvent(message);
+        //        trackMessage(message);
         //    }
         //    };
         //    EventBus.Register(subscriber);
 
         //    EventBus.Post("Hello");
-        //    Assert.Equal("Hello", lastEvent);
+        //    Assert.Equal("Hello", lastMessage);
         //    Assert.Equal(2, eventsReceived.Count);
         //}
 
@@ -40,50 +40,50 @@ namespace Snork.EventBus.Tests
         //public void TestAnonymousSubscriberClassWithPrivateSuperclass() {
         //    EventBus.Register(new PublicWithPrivateSuperClass());
         //    EventBus.Post("Hello");
-        //    Assert.Equal("Hello", lastEvent);
+        //    Assert.Equal("Hello", lastMessage);
         //    Assert.Equal(2, eventsReceived.Count);
         //}
 
         //[Fact]
-        //public void TestSubscriberClassWithPrivateEvent()
+        //public void TestSubscriberClassWithPrivateMessage()
         //{
-        //    EventBus.Register(new PublicClassWithPrivateEvent(this));
-        //    var privateEvent = new PrivateEvent();
-        //    EventBus.Post(privateEvent);
-        //    Assert.Equal(privateEvent, lastEvent);
+        //    EventBus.Register(new PublicClassWithPrivateMessage(this));
+        //    var privateMessage = new PrivateMessage();
+        //    EventBus.Post(privateMessage);
+        //    Assert.Equal(privateMessage, lastMessage);
         //    Assert.Equal(1, eventsReceived.Count);
         //}
 
         //[Fact]
-        //public void TestSubscriberClassWithPublicAndPrivateEvent()
+        //public void TestSubscriberClassWithPublicAndPrivateMessage()
         //{
-        //    EventBus.Register(new PublicClassWithPublicAndPrivateEvent());
+        //    EventBus.Register(new PublicClassWithPublicAndPrivateMessage());
 
         //    EventBus.Post("Hello");
-        //    Assert.Equal("Hello", lastEvent);
+        //    Assert.Equal("Hello", lastMessage);
         //    Assert.Equal(1, eventsReceived.Count);
 
-        //    var privateEvent = new PrivateEvent();
-        //    EventBus.Post(privateEvent);
-        //    Assert.Equal(privateEvent, lastEvent);
+        //    var privateMessage = new PrivateMessage();
+        //    EventBus.Post(privateMessage);
+        //    Assert.Equal(privateMessage, lastMessage);
         //    Assert.Equal(2, eventsReceived.Count);
         //}
 
         //[Fact]
-        //public void TestSubscriberExtendingClassWithPrivateEvent()
+        //public void TestSubscriberExtendingClassWithPrivateMessage()
         //{
-        //    EventBus.Register(new PublicWithPrivateEventInSuperclass(this));
-        //    var privateEvent = new PrivateEvent();
-        //    EventBus.Post(privateEvent);
-        //    Assert.Equal(privateEvent, lastEvent);
+        //    EventBus.Register(new PublicWithPrivateMessageInSuperclass(this));
+        //    var privateMessage = new PrivateMessage();
+        //    EventBus.Post(privateMessage);
+        //    Assert.Equal(privateMessage, lastMessage);
         //    Assert.Equal(2, eventsReceived.Count);
         //}
 
-        private class PrivateEvent
+        private class PrivateMessage
         {
         }
 
-        public class PublicClass : OuterTestHandlerBase
+        public class PublicClass : OuterTestSubscriberBase
         {
             public PublicClass(TestBase outerTest) : base(outerTest)
             {
@@ -96,7 +96,7 @@ namespace Snork.EventBus.Tests
             }
         }
 
-        internal class PrivateClass : OuterTestHandlerBase
+        internal class PrivateClass : OuterTestSubscriberBase
         {
             public PrivateClass(TestBase outerTest) : base(outerTest)
             {
@@ -118,22 +118,22 @@ namespace Snork.EventBus.Tests
         //    }
         //}
 
-        //public class PublicClassWithPrivateEvent : OuterTestHandlerBase
+        //public class PublicClassWithPrivateMessage : OuterTestSubscriberBase
         //{
-        //    public PublicClassWithPrivateEvent(TestBase outerTest) : base(outerTest)
+        //    public PublicClassWithPrivateMessage(TestBase outerTest) : base(outerTest)
         //    {
         //    }
 
         //    [Subscribe]
-        //    public virtual void OnMessage(PrivateEvent any)
+        //    public virtual void OnMessage(PrivateMessage any)
         //    {
         //        OuterTest.TrackMessage(any);
         //    }
         //}
 
-        //public class PublicClassWithPublicAndPrivateEvent : OuterTestHandlerBase
+        //public class PublicClassWithPublicAndPrivateMessage : OuterTestSubscriberBase
         //{
-        //    public PublicClassWithPublicAndPrivateEvent(TestBase outerTest) : base(
+        //    public PublicClassWithPublicAndPrivateMessage(TestBase outerTest) : base(
         //        outerTest)
         //    {
         //    }
@@ -145,15 +145,15 @@ namespace Snork.EventBus.Tests
         //    }
 
         //    [Subscribe]
-        //    public virtual void OnMessage(PrivateEvent any)
+        //    public virtual void OnMessage(PrivateMessage any)
         //    {
         //        OuterTest.TrackMessage(any);
         //    }
         //}
 
-        //public class PublicWithPrivateEventInSuperclass : PublicClassWithPrivateEvent
+        //public class PublicWithPrivateMessageInSuperclass : PublicClassWithPrivateMessage
         //{
-        //    public PublicWithPrivateEventInSuperclass(TestBase outerTest) : base(
+        //    public PublicWithPrivateMessageInSuperclass(TestBase outerTest) : base(
         //        outerTest)
         //    {
         //    }

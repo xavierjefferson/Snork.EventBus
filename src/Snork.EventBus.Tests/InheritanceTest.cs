@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+using Snork.EventBus.Tests.Messages;
+using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 
 namespace Snork.EventBus.Tests
@@ -21,67 +23,59 @@ namespace Snork.EventBus.Tests
     /**
  * @author Markus Junginger, greenrobot
  */
-    public class InheritanceTest
+    public class InheritanceTest : InheritanceTestBase
     {
-        protected EventBus eventBus;
-
         public InheritanceTest()
         {
             setUp();
         }
 
-        public int countMyEventExtended { get; set; }
-        public int countMyEvent { get; set; }
-        public int countobjectEvent { get; set; }
-        private int countMyEventInterface { get; set; }
-        private int countMyEventInterfaceExtended { get; set; }
-
         public void setUp()
         {
-            eventBus = new EventBus();
+            EventBus = new EventBus();
         }
 
         [Fact]
-        public virtual void TestEventClassHierarchy()
+        public virtual void TestMessageClassHierarchy()
         {
-            eventBus.Register(this);
+            EventBus.Register(this);
 
-            eventBus.Post("Hello");
-            Assert.Equal(1, countobjectEvent);
+            EventBus.Post("Hello");
+            Assert.Equal(1, CountObjectMessage);
 
-            eventBus.Post(new MyEvent());
-            Assert.Equal(2, countobjectEvent);
-            Assert.Equal(1, countMyEvent);
+            EventBus.Post(new MyInheritanceMessage());
+            Assert.Equal(2, CountObjectMessage);
+            Assert.Equal(1, CountMyMessage);
 
-            eventBus.Post(new MyEventExtended());
-            Assert.Equal(3, countobjectEvent);
-            Assert.Equal(2, countMyEvent);
-            Assert.Equal(1, countMyEventExtended);
+            EventBus.Post(new MyInheritanceMessageExtended());
+            Assert.Equal(3, CountObjectMessage);
+            Assert.Equal(2, CountMyMessage);
+            Assert.Equal(1, CountMyMessageExtended);
         }
 
         [Fact]
-        public void TestEventClassHierarchySticky()
+        public void TestMessageClassHierarchySticky()
         {
-            eventBus.PostSticky("Hello");
-            eventBus.PostSticky(new MyEvent());
-            eventBus.PostSticky(new MyEventExtended());
-            eventBus.Register(new StickySubscriber(this));
-            Assert.Equal(1, countMyEventExtended);
-            Assert.Equal(2, countMyEvent);
-            Assert.Equal(3, countobjectEvent);
+            EventBus.PostSticky("Hello");
+            EventBus.PostSticky(new MyInheritanceMessage());
+            EventBus.PostSticky(new MyInheritanceMessageExtended());
+            EventBus.Register(new StickySubscriber(this));
+            Assert.Equal(1, CountMyMessageExtended);
+            Assert.Equal(2, CountMyMessage);
+            Assert.Equal(3, CountObjectMessage);
         }
 
         [Fact]
-        public void TestEventInterfaceHierarchy()
+        public void TestMessageInterfaceHierarchy()
         {
-            eventBus.Register(this);
+            EventBus.Register(this);
 
-            eventBus.Post(new MyEvent());
-            Assert.Equal(1, countMyEventInterface);
+            EventBus.Post(new MyInheritanceMessage());
+            Assert.Equal(1, CountMyMessageInterface);
 
-            eventBus.Post(new MyEventExtended());
-            Assert.Equal(2, countMyEventInterface);
-            Assert.Equal(1, countMyEventInterfaceExtended);
+            EventBus.Post(new MyInheritanceMessageExtended());
+            Assert.Equal(2, CountMyMessageInterface);
+            Assert.Equal(1, CountMyMessageInterfaceExtended);
         }
 
 
@@ -89,21 +83,21 @@ namespace Snork.EventBus.Tests
         public void TestSubscriberClassHierarchy()
         {
             var subscriber = new InheritanceSubclassTest();
-            eventBus.Register(subscriber);
+            EventBus.Register(subscriber);
 
-            eventBus.Post("Hello");
-            Assert.Equal(1, subscriber.countobjectEvent);
+            EventBus.Post("Hello");
+            Assert.Equal(1, subscriber.CountObjectMessage);
 
-            eventBus.Post(new MyEvent());
-            Assert.Equal(2, subscriber.countobjectEvent);
-            Assert.Equal(0, subscriber.countMyEvent);
-            Assert.Equal(1, subscriber.countMyEventOverwritten);
+            EventBus.Post(new MyInheritanceMessage());
+            Assert.Equal(2, subscriber.CountObjectMessage);
+            Assert.Equal(0, subscriber.CountMyMessage);
+            Assert.Equal(1, subscriber.CountMyMessageOverwritten);
 
-            eventBus.Post(new MyEventExtended());
-            Assert.Equal(3, subscriber.countobjectEvent);
-            Assert.Equal(0, subscriber.countMyEvent);
-            Assert.Equal(1, subscriber.countMyEventExtended);
-            Assert.Equal(2, subscriber.countMyEventOverwritten);
+            EventBus.Post(new MyInheritanceMessageExtended());
+            Assert.Equal(3, subscriber.CountObjectMessage);
+            Assert.Equal(0, subscriber.CountMyMessage);
+            Assert.Equal(1, subscriber.CountMyMessageExtended);
+            Assert.Equal(2, subscriber.CountMyMessageOverwritten);
         }
 
         [Fact]
@@ -111,105 +105,49 @@ namespace Snork.EventBus.Tests
         {
             var
                 subscriber = new InheritanceSubclassNoMethodTest();
-            eventBus.Register(subscriber);
+            EventBus.Register(subscriber);
 
-            eventBus.Post("Hello");
-            Assert.Equal(1, subscriber.countobjectEvent);
+            EventBus.Post("Hello");
+            Assert.Equal(1, subscriber.CountObjectMessage);
 
-            eventBus.Post(new MyEvent());
-            Assert.Equal(2, subscriber.countobjectEvent);
-            Assert.Equal(1, subscriber.countMyEvent);
+            EventBus.Post(new MyInheritanceMessage());
+            Assert.Equal(2, subscriber.CountObjectMessage);
+            Assert.Equal(1, subscriber.CountMyMessage);
 
-            eventBus.Post(new MyEventExtended());
-            Assert.Equal(3, subscriber.countobjectEvent);
-            Assert.Equal(2, subscriber.countMyEvent);
-            Assert.Equal(1, subscriber.countMyEventExtended);
+            EventBus.Post(new MyInheritanceMessageExtended());
+            Assert.Equal(3, subscriber.CountObjectMessage);
+            Assert.Equal(2, subscriber.CountMyMessage);
+            Assert.Equal(1, subscriber.CountMyMessageExtended);
         }
 
         [Subscribe]
         public virtual void OnMessage(object message)
         {
-            countobjectEvent++;
+            CountObjectMessage++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(MyEvent message)
+        public virtual void OnMessage(MyInheritanceMessage message)
         {
-            countMyEvent++;
+            CountMyMessage++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(MyEventExtended message)
+        public virtual void OnMessage(MyInheritanceMessageExtended message)
         {
-            countMyEventExtended++;
+            CountMyMessageExtended++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(MyEventInterface message)
+        public virtual void OnMessage(MyInheritanceMessageInterface message)
         {
-            countMyEventInterface++;
+            CountMyMessageInterface++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(MyEventInterfaceExtended message)
+        public virtual void OnMessage(MyInheritanceMessageInterfaceExtended message)
         {
-            countMyEventInterfaceExtended++;
-        }
-
-        public interface MyEventInterface
-        {
-        }
-
-        public class MyEvent : MyEventInterface
-        {
-        }
-
-        public interface MyEventInterfaceExtended : MyEventInterface
-        {
-        }
-
-        public class MyEventExtended : MyEvent, MyEventInterfaceExtended
-        {
-        }
-
-        public class StickySubscriber
-        {
-            private readonly InheritanceTest _outer;
-
-            public StickySubscriber(InheritanceTest outer)
-            {
-                _outer = outer;
-            }
-
-            [Subscribe(sticky: true)]
-            public virtual void OnMessage(object message)
-            {
-                _outer.countobjectEvent++;
-            }
-
-            [Subscribe(sticky: true)]
-            public virtual void OnMessage(MyEvent message)
-            {
-                _outer.countMyEvent++;
-            }
-
-            [Subscribe(sticky: true)]
-            public virtual void OnMessage(MyEventExtended message)
-            {
-                _outer.countMyEventExtended++;
-            }
-
-            [Subscribe(sticky: true)]
-            public virtual void OnMessage(MyEventInterface message)
-            {
-                _outer.countMyEventInterface++;
-            }
-
-            [Subscribe(sticky: true)]
-            public virtual void OnMessage(MyEventInterfaceExtended message)
-            {
-                _outer.countMyEventInterfaceExtended++;
-            }
+            CountMyMessageInterfaceExtended++;
         }
     }
 }

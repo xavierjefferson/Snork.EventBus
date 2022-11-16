@@ -10,19 +10,22 @@ namespace Snork.EventBus
     /// </summary>
     public class SubscriberMethod
     {
-        public SubscriberMethod(MethodInfo method, Type messageType, ThreadModeEnum threadMode, int priority, bool sticky)
+        public SubscriberMethod(MethodInfo method, Type messageType, ThreadModeEnum threadMode, int priority,
+            bool sticky, int iteration)
         {
-            this.Method = method;
-            this.ThreadMode = threadMode;
-            this.EventType = messageType;
-            this.Priority = priority;
-            this.Sticky = sticky;
+            Method = method;
+            ThreadMode = threadMode;
+            EventType = messageType;
+            Priority = priority;
+            Sticky = sticky;
+            Iteration = iteration;
         }
 
         public Type EventType { get; }
         public MethodInfo Method { get; }
         public int Priority { get; }
         public bool Sticky { get; }
+        public int Iteration { get; }
         public ThreadModeEnum ThreadMode { get; }
 
         /// <summary>

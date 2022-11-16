@@ -19,12 +19,12 @@ namespace Snork.EventBus.Meta
         }
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        public override List<SubscriberMethod> GetSubscriberMethods()
+        public override List<SubscriberMethod> GetSubscriberMethods(int generation)
         {
             var methods = new List<SubscriberMethod>();
             foreach (var info in _methodInfos)
                 methods.Add(CreateSubscriberMethod(info.MethodName, info.MessageType, info.ThreadMode,
-                    info.Priority, info.Sticky));
+                    info.Priority, info.Sticky, generation));
 
             return methods;
         }

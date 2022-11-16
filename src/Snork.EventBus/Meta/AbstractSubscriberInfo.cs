@@ -20,7 +20,7 @@ namespace Snork.EventBus.Meta
         public bool ShouldCheckSuperclass { get; }
         public Type? SubscriberType { get; }
 
-        public abstract List<SubscriberMethod> GetSubscriberMethods();
+        public abstract List<SubscriberMethod> GetSubscriberMethods(int generation);
 
         public ISubscriberInfo? GetSuperSubscriberInfo()
         {
@@ -31,16 +31,17 @@ namespace Snork.EventBus.Meta
 
         protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType)
         {
-            return CreateSubscriberMethod(methodName, messageType, ThreadModeEnum.Posting, 0, false);
+            return CreateSubscriberMethod(methodName, messageType, ThreadModeEnum.Posting, 0, false, 0);
         }
 
         protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType, ThreadModeEnum threadMode)
         {
-            return CreateSubscriberMethod(methodName, messageType, threadMode, 0, false);
+            return CreateSubscriberMethod(methodName, messageType, threadMode, 0, false, 0);
         }
 
-        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType, ThreadModeEnum threadMode,
-            int priority, bool sticky)
+        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType,
+            ThreadModeEnum threadMode,
+            int priority, bool sticky, int generation)
         {
             try
             {
@@ -48,7 +49,7 @@ namespace Snork.EventBus.Meta
                 if (method == null)
                     throw new EventBusException("Could not find subscriber method in " + SubscriberType +
                                                 ". Maybe a missing ProGuard rule?");
-                return new SubscriberMethod(method, messageType, threadMode, priority, sticky);
+                return new SubscriberMethod(method, messageType, threadMode, priority, sticky, generation);
             }
             catch (Exception e)
             {

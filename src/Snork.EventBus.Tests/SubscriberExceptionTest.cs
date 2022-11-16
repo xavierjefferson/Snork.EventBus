@@ -15,6 +15,7 @@
  */
 
 using System;
+using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 
 namespace Snork.EventBus.Tests
@@ -31,12 +32,12 @@ namespace Snork.EventBus.Tests
             EventBus.Register(this);
             EventBus.Post("Foo");
 
-            assertEventCount(1);
-            Assert.Equal(typeof(SubscriberExceptionMessage), lastEvent.GetType());
-            var exEvent = (SubscriberExceptionMessage)lastEvent;
-            Assert.Equal("Foo", exEvent.OriginalMessage);
-            Assert.Same(this, exEvent.OriginalSubscriber);
-            Assert.Equal("Bar", exEvent.Exception.Message);
+            AssertMessageCount(1);
+            Assert.Equal(typeof(SubscriberExceptionMessage), LastMessage.GetType());
+            var exMessage = (SubscriberExceptionMessage)LastMessage;
+            Assert.Equal("Foo", exMessage.OriginalMessage);
+            Assert.Same(this, exMessage.OriginalSubscriber);
+            Assert.Equal("Bar", exMessage.Exception.Message);
         }
 
         [Fact]
@@ -46,7 +47,7 @@ namespace Snork.EventBus.Tests
             EventBus.Register(this);
             EventBus.Register(new BadExceptionSubscriber());
             EventBus.Post("Foo");
-            assertEventCount(1);
+            AssertMessageCount(1);
         }
 
         [Subscribe]
@@ -59,15 +60,6 @@ namespace Snork.EventBus.Tests
         public virtual void OnMessage(SubscriberExceptionMessage message)
         {
             TrackMessage(message);
-        }
-
-        public class BadExceptionSubscriber
-        {
-            [Subscribe]
-            public virtual void OnMessage(SubscriberExceptionMessage message)
-            {
-                throw new Exception("Bad");
-            }
         }
     }
 }

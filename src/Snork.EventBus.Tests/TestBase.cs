@@ -15,7 +15,7 @@
  */
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -32,30 +32,31 @@ namespace Snork.EventBus.Tests
      */
         protected static readonly bool LONG_TESTS = false;
 
-        protected readonly List<object> eventsReceived;
-
-        protected volatile int eventCount;
         public string Fail;
 
-        protected volatile object lastEvent;
-        protected volatile Thread lastThread;
+        protected volatile object LastMessage;
+        protected volatile Thread LastThread;
 
-        public TestBase() : this(false)
+        protected TestBase() : this(true)
         {
         }
 
-        public TestBase(bool collectEventsReceived)
+        protected TestBase(bool collectMessagesReceived)
         {
-            if (collectEventsReceived)
-                eventsReceived = new List<object>();
+            if (collectMessagesReceived)
+                MessagesReceived = new ConcurrentBag<object>();
             else
-                eventsReceived = null;
+                MessagesReceived = null;
             setUpBase();
         }
 
+        protected ConcurrentBag<object> MessagesReceived { get; }
+
+        protected int MessageCount => MessagesReceived?.Count ?? 0;
+
         public EventBus EventBus { get; set; }
-        public Exception failed { get; set; }
-        public int LastPriority { get; set; } = int.MaxValue;
+        public Exception LastException { get; set; }
+        public int LastPriority { get; set; } = int.MinValue;
 
 
         public void setUpBase()
@@ -64,51 +65,48 @@ namespace Snork.EventBus.Tests
             EventBus = new EventBus();
         }
 
-        protected void waitForEventCount(int expectedCount, int maxMillis)
+        protected void WaitForMessageCount(int expectedCount, int maxMillis)
         {
             for (var i = 0; i < maxMillis; i++)
             {
-                var currentCount = eventCount;
+                var currentCount = MessageCount;
                 if (currentCount == expectedCount)
                     break;
-                if (currentCount > expectedCount)
-                    Assert.True(false,
-                        $"Current count ({currentCount}) is already higher than expected count ({expectedCount})");
-                else
-                    try
-                    {
-                        Thread.Sleep(1);
-                    }
-                    catch (OperationCanceledException e)
-                    {
-                        throw new InvalidOperationException("", e);
-                    }
+                Assert.False(currentCount > expectedCount,
+                    $"Current count ({currentCount}) is already higher than expected count ({expectedCount})");
+
+                try
+                {
+                    Thread.Sleep(1);
+                }
+                catch (OperationCanceledException e)
+                {
+                    throw new InvalidOperationException("", e);
+                }
             }
 
-            Assert.Equal(expectedCount, eventCount);
+            Assert.Equal(expectedCount, MessageCount);
         }
 
         public void TrackMessage(object message)
         {
-            lastEvent = message;
-            lastThread = Thread.CurrentThread;
-            if (eventsReceived != null) eventsReceived.Add(message);
-            // Must the the last one because we wait for this
-            Interlocked.Increment(ref eventCount);
+            LastMessage = message;
+            LastThread = Thread.CurrentThread;
+            MessagesReceived?.Add(message);
         }
 
-        protected void assertEventCount(int expectedEventCount)
+        protected void AssertMessageCount(int expectedMessageCount)
         {
-            Assert.Equal(expectedEventCount, eventCount);
+            Assert.Equal(expectedMessageCount, MessageCount);
         }
 
-        protected void countDownAndAwaitLatch(CountdownEvent latch, long seconds)
+        protected void CountDownAndAwaitLatch(CountdownEvent latch, long seconds)
         {
-            latch.AddCount(-1);
+            latch.Signal();
             latch.Wait(TimeSpan.FromSeconds(seconds));
         }
 
-        protected void awaitLatch(CountdownEvent latch, long seconds)
+        protected void AwaitLatch(CountdownEvent latch, long seconds)
         {
             try
             {

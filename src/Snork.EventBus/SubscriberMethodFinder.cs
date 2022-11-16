@@ -9,11 +9,15 @@ namespace Snork.EventBus
 {
     internal class SubscriberMethodFinder
     {
+        static SubscriberMethodFinder()
+        {
+            MethodCache =
+                new Dictionary<Type, List<SubscriberMethod>>();
+        }
         private const int PoolSize = 4;
 
-        private static readonly Dictionary<Type, List<SubscriberMethod>> MethodCache =
-            new Dictionary<Type, List<SubscriberMethod>>();
-
+        private static readonly Dictionary<Type, List<SubscriberMethod>> MethodCache;
+      
         private static readonly FindState?[] FindStatePool = new FindState?[PoolSize];
         private readonly bool _ignoreGeneratedIndex;
         private readonly bool _strictMethodVerification;
@@ -28,22 +32,26 @@ namespace Snork.EventBus
             _ignoreGeneratedIndex = ignoreGeneratedIndex;
         }
 
+
         public List<SubscriberMethod> FindSubscriberMethods(Type subscriberType)
         {
-            var subscriberMethods = MethodCache.ContainsKey(subscriberType) ? MethodCache[subscriberType] : null;
-            if (subscriberMethods != null) return subscriberMethods;
+            lock (MethodCache)
+            {
+                var subscriberMethods = MethodCache.ContainsKey(subscriberType) ? MethodCache[subscriberType] : null;
+                if (subscriberMethods != null) return subscriberMethods;
 
-            if (_ignoreGeneratedIndex)
-                subscriberMethods = FindUsingReflection(subscriberType);
-            else
-                subscriberMethods = FindUsingInfo(subscriberType);
+                if (_ignoreGeneratedIndex)
+                    subscriberMethods = FindUsingReflection(subscriberType);
+                else
+                    subscriberMethods = FindUsingInfo(subscriberType);
 
-            if (!subscriberMethods.Any())
-                throw new EventBusException(
-                    $"Subscriber {subscriberType} and its base classes have no public methods with the @Subscribe annotation");
+                if (!subscriberMethods.Any())
+                    throw new EventBusException(
+                        $"Type {subscriberType.FullName} and its base classes have no public methods with attribute {typeof(SubscribeAttribute).FullName}");
 
-            MethodCache[subscriberType] = subscriberMethods;
-            return subscriberMethods;
+                MethodCache[subscriberType] = subscriberMethods;
+                return subscriberMethods;
+            }
         }
 
         private List<SubscriberMethod> FindUsingInfo(Type subscriberType)
@@ -55,8 +63,8 @@ namespace Snork.EventBus
                 findState.SubscriberInfo = GetSubscriberInfo(findState);
                 if (findState.SubscriberInfo != null)
                 {
-                    var array = findState.SubscriberInfo.GetSubscriberMethods();
-                    foreach (var subscriberMethod in array)
+                    var subscriberMethods = findState.SubscriberInfo.GetSubscriberMethods(findState.Iteration);
+                    foreach (var subscriberMethod in subscriberMethods)
                         if (findState.CheckAdd(subscriberMethod.Method, subscriberMethod.EventType))
                             findState.SubscriberMethods.Add(subscriberMethod);
                 }
@@ -66,9 +74,13 @@ namespace Snork.EventBus
                 }
 
                 findState.MoveToSuperclass();
+                findState.Iteration++;
             }
 
-            return GetMethodsAndRelease(findState);
+            //remove duplicate signatures
+            var tmp =  GetMethodsAndRelease(findState);
+            var uniques = tmp.OrderBy(i => i.Iteration).GroupBy(i => i.Method.ToString()).Select(i => i.FirstOrDefault()).ToList();
+            return uniques;
         }
 
         private List<SubscriberMethod> GetMethodsAndRelease(FindState findState)
@@ -109,7 +121,7 @@ namespace Snork.EventBus
 
         private ISubscriberInfo? GetSubscriberInfo(FindState findState)
         {
-            if (findState.SubscriberInfo != null && findState.SubscriberInfo.GetSuperSubscriberInfo() != null)
+            if (findState.SubscriberInfo?.GetSuperSubscriberInfo() != null)
             {
                 var superclassInfo = findState.SubscriberInfo.GetSuperSubscriberInfo();
                 if (findState.Type == superclassInfo.SubscriberType) return superclassInfo;
@@ -168,35 +180,39 @@ namespace Snork.EventBus
                 findState.SkipSuperClasses = true;
             }
 
-            foreach (var method in methods)
+            foreach (var item in methods.Select(i => new
+                     {
+                         Method = i,
+                         ParameterInfos = i.GetParameters(),
+                         SubscribeAttributes = i.GetCustomAttributes(typeof(SubscribeAttribute))
+                             .OfType<SubscribeAttribute>()
+                             .ToList()
+                     }).Where(i => i.SubscribeAttributes.Count == 1))
             {
-                var ofType = method.GetCustomAttributes(typeof(SubscribeAttribute)).OfType<SubscribeAttribute>()
-                    .ToList();
+                var method = item.Method;
+                var subscribeAttributes = item.SubscribeAttributes;
 
-                if (!ofType.Any()) continue;
-                ;
                 if (method.IsPublic && !method.IsAbstract && !method.IsStatic)
                 {
-                    var parameterTypes = method.GetParameters();
-                    if (parameterTypes.Length == 1)
+                    var parameterInfos = item.ParameterInfos;
+                    if (parameterInfos.Length == 1)
                     {
-                        var subscribeAnnotation = ofType.FirstOrDefault();
-                        if (subscribeAnnotation != null)
+                        var subscribeAttribute = subscribeAttributes.FirstOrDefault();
+                        if (subscribeAttribute != null)
                         {
-                            var messageType = parameterTypes[0].ParameterType;
+                            var messageType = parameterInfos[0].ParameterType;
                             if (findState.CheckAdd(method, messageType))
                             {
-                                var threadMode = subscribeAnnotation.ThreadMode;
+                                var threadMode = subscribeAttribute.ThreadMode;
                                 findState.SubscriberMethods.Add(new SubscriberMethod(method, messageType, threadMode,
-                                    subscribeAnnotation.Priority, subscribeAnnotation.Sticky));
+                                    subscribeAttribute.Priority, subscribeAttribute.Sticky, findState.Iteration));
                             }
                         }
                     }
                     else if (_strictMethodVerification)
                     {
                         throw new EventBusException(
-                            $"@Subscribe method {method.DeclaringType.FullName}.{method.Name} must have exactly 1 parameter but has " +
-                            parameterTypes.Length);
+                            $"@Subscribe method {method.DeclaringType.FullName}.{method.Name} must have exactly 1 parameter but has {parameterInfos.Length}");
                     }
                 }
                 else if (_strictMethodVerification)
@@ -209,17 +225,20 @@ namespace Snork.EventBus
 
         public static void ClearCaches()
         {
-            MethodCache.Clear();
+            lock (MethodCache)
+            {
+                MethodCache.Clear();
+            }
         }
 
         internal class FindState
         {
-            readonly Dictionary<Type, object> _anyMethodByEventType = new Dictionary<Type, object>();
+            private readonly Dictionary<Type, object> _anyMethodByEventType = new Dictionary<Type, object>();
             private readonly StringBuilder _methodKeyBuilder = new StringBuilder(128);
-            readonly Dictionary<string, Type> _subscriberTypeByMethodKey = new Dictionary<string, Type>();
-            public bool SkipSuperClasses { get; set; }
+            private readonly Dictionary<string, Type> _subscriberTypeByMethodKey = new Dictionary<string, Type>();
 
-            private Type? subscriberType;
+            public int Iteration { get; set; }
+            public bool SkipSuperClasses { get; set; }
             public Type? Type { get; private set; }
             public List<SubscriberMethod> SubscriberMethods { get; } = new List<SubscriberMethod>();
             public ISubscriberInfo? SubscriberInfo { get; set; }
@@ -229,6 +248,7 @@ namespace Snork.EventBus
                 subscriberType = Type = subscriberType;
                 SkipSuperClasses = false;
                 SubscriberInfo = null;
+                Iteration = 0;
             }
 
             public void Recycle()
@@ -237,9 +257,9 @@ namespace Snork.EventBus
                 _anyMethodByEventType.Clear();
                 _subscriberTypeByMethodKey.Clear();
                 _methodKeyBuilder.Length = 0;
-                subscriberType = null;
                 Type = null;
                 SkipSuperClasses = false;
+                Iteration = 0;
                 SubscriberInfo = null;
             }
 
@@ -272,7 +292,7 @@ namespace Snork.EventBus
                 var methodKey = _methodKeyBuilder.ToString();
                 var methodType = method.DeclaringType;
                 var methodTypeOld = _subscriberTypeByMethodKey.Put(methodKey, methodType);
-                if (methodTypeOld == null || methodTypeOld.IsAssignableFrom(methodType))
+                if (methodTypeOld == null || methodTypeOld.IsAssignableFromExt(methodType))
                     // Only Add if not already found in a sub class
                     return true;
 
@@ -289,13 +309,18 @@ namespace Snork.EventBus
                 }
                 else
                 {
+                    //if (Type == typeof(object))
+                    //{
+                    //    Type = null;
+                    //    return;
+                    //}
+
                     if (Type != null)
                     {
                         Type = Type.BaseType;
-                        if (Type != null)
-                        {
-                            if (Type == typeof(object)) Type = null;
-                        }
+                        //if (Type != null)
+                        //    if (Type == typeof(object))
+                        //        Type = null;
                     }
                 }
             }

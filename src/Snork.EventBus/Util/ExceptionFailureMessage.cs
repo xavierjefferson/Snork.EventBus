@@ -8,12 +8,12 @@ namespace Snork.EventBus.Util
     /// </summary>
     public class ExceptionFailureMessage : IExecutionScopeContainer
     {
-        protected readonly bool suppressErrorUi;
+        public bool SuppressErrorUi { get; }
 
         public ExceptionFailureMessage(Exception exception)
         {
             Exception = exception;
-            suppressErrorUi = false;
+            SuppressErrorUi = false;
         }
 
         /// <summary>
@@ -23,16 +23,10 @@ namespace Snork.EventBus.Util
         public ExceptionFailureMessage(Exception exception, bool suppressErrorUi)
         {
             Exception = exception;
-            this.suppressErrorUi = suppressErrorUi;
+            this.SuppressErrorUi = suppressErrorUi;
         }
 
         public Exception Exception { get; }
         public object? ExecutionScope { get; set; }
-
-
-        public bool IsSuppressErrorUi()
-        {
-            return suppressErrorUi;
-        }
     }
 }
