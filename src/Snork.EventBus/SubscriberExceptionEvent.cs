@@ -3,7 +3,7 @@ using System;
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     This Event is posted when an exception occurs inside a subscriber's event handling method.
+    ///     This event is posted when an exception occurs inside a subscriber's event handling method.
     /// </summary>
     public sealed class SubscriberExceptionEvent
     {
@@ -23,7 +23,7 @@ namespace Snork.EventBus
         public EventBus EventBus { get; }
 
         /// <summary>
-        ///     The Exception thrown by a subscriber.
+        ///     The <see cref="System.Exception"/> thrown by a subscriber.
         /// </summary>
         public Exception Exception { get; }
 

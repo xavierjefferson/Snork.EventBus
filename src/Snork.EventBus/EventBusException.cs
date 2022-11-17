@@ -5,7 +5,7 @@ namespace Snork.EventBus
     /// <summary>
     ///     An <see cref="InvalidOperationException"/> thrown in cases something went wrong inside EventBus.
     /// </summary>
-    public class EventBusException : Exception
+    public class EventBusException : InvalidOperationException
     {
 
         public EventBusException(string detailEvent) : base(detailEvent)

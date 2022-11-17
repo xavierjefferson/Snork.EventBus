@@ -12,8 +12,6 @@ namespace Snork.EventBus
             Subscription = subscription;
         }
 
-        internal PendingPost? Next { get; set; }
-
         public object? Event { get; private set; }
         public Subscription? Subscription { get; private set; }
 
@@ -24,7 +22,6 @@ namespace Snork.EventBus
             {
                 pendingPost.Event = @event;
                 pendingPost.Subscription = subscription;
-                pendingPost.Next = null;
                 return pendingPost;
             }
 
@@ -35,7 +32,6 @@ namespace Snork.EventBus
         {
             pendingPost.Event = null;
             pendingPost.Subscription = null;
-            pendingPost.Next = null;
             PendingPostPool.Enqueue(pendingPost);
 
         }

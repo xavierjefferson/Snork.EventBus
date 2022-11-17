@@ -20,7 +20,7 @@ namespace Snork.EventBus.Meta
         public bool ShouldCheckSuperclass { get; }
         public Type? SubscriberType { get; }
 
-        public abstract List<SubscriberMethod> GetSubscriberMethods(int generation);
+        public abstract List<SubscriberMethod> GetSubscriberMethods(int iteration);
 
         public ISubscriberInfo? GetSuperSubscriberInfo()
         {
@@ -41,20 +41,18 @@ namespace Snork.EventBus.Meta
 
         protected SubscriberMethod CreateSubscriberMethod(string methodName, Type eventType,
             ThreadModeEnum threadMode,
-            int priority, bool sticky, int generation)
+            int priority, bool sticky, int iteration)
         {
             try
             {
                 var method = SubscriberType.GetMethod(methodName, new[] { eventType });
                 if (method == null)
-                    throw new EventBusException("Could not find subscriber method in " + SubscriberType +
-                                                ". Maybe a missing ProGuard rule?");
-                return new SubscriberMethod(method, eventType, threadMode, priority, sticky, generation);
+                    throw new EventBusException($"Could not find subscriber method in {SubscriberType.FullName}");
+                return new SubscriberMethod(method, eventType, threadMode, priority, sticky, iteration);
             }
             catch (Exception e)
             {
-                throw new EventBusException("Could not find subscriber method in " + SubscriberType +
-                                            ". Maybe a missing ProGuard rule?", e);
+                throw new EventBusException($"Could not find subscriber method in {SubscriberType.FullName}", e);
             }
         }
     }

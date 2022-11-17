@@ -4,41 +4,41 @@ namespace Snork.EventBus.Tests.Subscribers
 {
     public class StickySubscriber
     {
-        private readonly InheritanceTestBase _outer;
+        private readonly InheritanceTestBase _outerTest;
 
-        public StickySubscriber(InheritanceTestBase outer)
+        public StickySubscriber(InheritanceTestBase outerTest)
         {
-            _outer = outer;
+            _outerTest = outerTest;
         }
 
         [Subscribe(sticky: true)]
         public virtual void OnEvent(object @event)
         {
-            _outer.CountObjectEvent++;
+            _outerTest.CountObjectEvent++;
         }
 
         [Subscribe(sticky: true)]
         public virtual void OnEvent(MyInheritanceEvent @event)
         {
-            _outer.CountMyEvent++;
+            _outerTest.CountMyEvent++;
         }
 
         [Subscribe(sticky: true)]
         public virtual void OnEvent(MyInheritanceEventExtended @event)
         {
-            _outer.CountMyEventExtended++;
+            _outerTest.CountMyEventExtended++;
         }
 
         [Subscribe(sticky: true)]
         public virtual void OnEvent(MyInheritanceEventInterface @event)
         {
-            _outer.CountMyEventInterface++;
+            _outerTest.CountMyEventInterface++;
         }
 
         [Subscribe(sticky: true)]
         public virtual void OnEvent(MyInheritanceEventInterfaceExtended @event)
         {
-            _outer.CountMyEventInterfaceExtended++;
+            _outerTest.CountMyEventInterfaceExtended++;
         }
     }
 }

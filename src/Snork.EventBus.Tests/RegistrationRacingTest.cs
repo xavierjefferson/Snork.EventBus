@@ -44,7 +44,7 @@ namespace Snork.EventBus.Tests
                     var eventCount = threads[t].EventCount;
                     if (eventCount != 1)
                         Assert.True(false,
-                            "Failed in iteration " + i + ": thread #" + t + " has event count of " + eventCount);
+                            $"Failed in iteration {i}: thread #{t} has event count of {eventCount}");
                 }
 
                 // Wait for threads to be done

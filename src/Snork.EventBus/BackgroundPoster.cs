@@ -54,7 +54,7 @@ namespace Snork.EventBus
                     }
                     catch (OperationCanceledException exception)
                     {
-                        _eventBus.Logger.LogWarning(exception, Thread.CurrentThread.Name + " was canceled");
+                        _eventBus.Logger.LogWarning(exception, $"Thread '{Thread.CurrentThread.Name}' was canceled");
                     }
             }
             finally

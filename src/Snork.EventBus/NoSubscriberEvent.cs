@@ -1,7 +1,7 @@
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     This Event is posted when no subscriber is found for a posted event.
+    ///     This event is posted when no subscriber is found for a posted event.
     /// </summary>
     public sealed class NoSubscriberEvent
     {

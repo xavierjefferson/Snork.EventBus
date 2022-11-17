@@ -284,7 +284,7 @@ namespace Snork.EventBus
                 var methodType = method.DeclaringType;
                 var methodTypeOld = _subscriberTypeByMethodKey.Put(methodKey, methodType);
                 if (methodTypeOld == null || methodTypeOld.IsAssignableFrom(methodType))
-                    // Only Add if not already found in a sub class
+                    // Only add if not already found in a sub class
                     return true;
 
                 // Revert the put, old class is further down the class hierarchy

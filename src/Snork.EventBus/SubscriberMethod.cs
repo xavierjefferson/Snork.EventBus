@@ -28,40 +28,18 @@ namespace Snork.EventBus
         public int Iteration { get; }
         public ThreadModeEnum ThreadMode { get; }
 
-        /// <summary>
-        ///     Used for efficient comparison
-        /// </summary>
-        public string? MethodString { get; private set; }
-
         public override bool Equals(object other)
         {
             if (other == this) return true;
 
             if (other is SubscriberMethod otherSubscriberMethod)
             {
-                GenerateMethodString();
-                otherSubscriberMethod.GenerateMethodString();
-                // Don't use method.equals because of http://code.google.com/p/android/issues/detail?id=7811#c6
-                return MethodString.Equals(otherSubscriberMethod.MethodString);
+                return otherSubscriberMethod.MethodInfo.Equals(this.MethodInfo);
             }
 
             return false;
         }
 
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        private void GenerateMethodString()
-        {
-            if (MethodString == null)
-            {
-                // MethodInfo.toString has more overhead, just take relevant parts of the method
-                var builder = new StringBuilder(64);
-                builder.Append(MethodInfo.DeclaringType.FullName);
-                builder.Append('#').Append(MethodInfo.Name);
-                builder.Append('(').Append(EventType.Name);
-                MethodString = builder.ToString();
-            }
-        }
 
         public override int GetHashCode()
         {

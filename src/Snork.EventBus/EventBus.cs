@@ -676,12 +676,5 @@ namespace Snork.EventBus
             public object? Event { get; set; }
             public Subscription? Subscription { get; set; }
         }
-
-        // Just an idea: we could provide a callback to post() to be notified, an alternative would be events, of course...
-        //// public ////
-        private interface PostCallback
-        {
-            void onPostCompleted(List<SubscriberExceptionEvent> exceptionEvents);
-        }
     }
 }

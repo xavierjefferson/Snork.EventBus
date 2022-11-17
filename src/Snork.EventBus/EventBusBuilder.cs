@@ -8,7 +8,7 @@ using Snork.EventBus.Meta;
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     Creates EventBus instances with custom parameters and also allows to install a custom default EventBus instance.
+    ///     Creates EventBus instances with custom parameters and also allows to install a custom default <see cref="EventBus"/> instance.
     ///     Create a new builder using <see cref="EventBus.Builder"/>.
     /// </summary>
     public class EventBusBuilder
@@ -85,7 +85,6 @@ namespace Snork.EventBus
         ///     Switching this feature off will improve posting of events. For simple event classes extending object directly,
         ///     we measured a speed up of 20% for event posting. For more complex event hierarchies, the speed up should be
         ///     greater than 20%.
-        ///     <p />
         ///     However, keep in mind that event posting usually consumes just a small proportion of CPU time inside an app,
         ///     unless it is posting at high rates, e.g. hundreds/thousands of events per second.
         /// </summary>
@@ -97,8 +96,8 @@ namespace Snork.EventBus
 
 
         /// <summary>
-        ///     Provide a custom thread pool to EventBus used for async and background event delivery. This is an advanced
-        ///     setting to that can break things: ensure the given ExecutorService won't get stuck to avoid undefined behavior.
+        ///     Provide a custom thread pool to <see cref="EventBus"/> used for async and background event delivery. This is an advanced
+        ///     setting to that can break things: ensure the given <see cref="ExecutorService"/> won't get stuck to avoid undefined behavior.
         /// </summary>
         public EventBusBuilder WithExecutor(IExecutor executor)
         {
@@ -107,7 +106,7 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     MethodInfo name verification is done for methods starting with onEvent to avoid typos; using this method you can
+        ///     <see cref="System.Reflection.MethodInfo"/> name verification is done for methods starting with OnEvent to avoid typos; using this method you can
         ///     exclude subscriber classes from this check. Also disables checks for method modifiers (public, not static nor
         ///     abstract).
         /// </summary>
@@ -171,16 +170,15 @@ namespace Snork.EventBus
 
         /// <summary>
         ///     Installs the default EventBus returned by <see cref="EventBus.Default"/>  using this builders' values. Must be
-        ///     done only once before the first usage of the default EventBus.
-        ///     @throws EventBusException if there's already a default EventBus instance in place
+        ///     done only once before the first usage of the default <see cref="EventBus"/>.
+        ///     @throws EventBusException if there's already a default <see cref="EventBus"/> instance in place
         /// </summary>
         public EventBus InstallDefaultEventBus()
         {
             lock (typeof(EventBus))
             {
                 if (EventBus.Default != null)
-                    throw new EventBusException("Default instance already exists." +
-                                                " It may be only set once before it's used the first time to ensure consistent behavior.");
+                    throw new EventBusException($"Default {nameof(EventBus)} instance already exists.");
 
                 EventBus._default = Build();
                 return EventBus.Default;
@@ -188,7 +186,7 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     Builds an EventBus based on the current configuration.
+        ///     Builds an <see cref="EventBus"/> instance based on the current configuration.
         /// </summary>
         public EventBus Build()
         {
