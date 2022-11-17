@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,20 +10,21 @@ namespace Snork.EventBus
 {
     internal class SubscriberMethodFinder
     {
-        static SubscriberMethodFinder()
-        {
-            MethodCache =
-                new Dictionary<Type, List<SubscriberMethod>>();
-        }
         private const int PoolSize = 4;
 
-        private static readonly Dictionary<Type, List<SubscriberMethod>> MethodCache;
-      
+        private static readonly ConcurrentDictionary<Type, List<SubscriberMethod>> MethodCache;
+
         private static readonly FindState?[] FindStatePool = new FindState?[PoolSize];
         private readonly bool _ignoreGeneratedIndex;
         private readonly bool _strictMethodVerification;
 
         private readonly List<ISubscriberInfoIndex>? _subscriberInfoIndexes;
+
+        static SubscriberMethodFinder()
+        {
+            MethodCache =
+                new ConcurrentDictionary<Type, List<SubscriberMethod>>();
+        }
 
         public SubscriberMethodFinder(List<ISubscriberInfoIndex> subscriberInfoIndexes, bool strictMethodVerification,
             bool ignoreGeneratedIndex)
@@ -65,7 +67,7 @@ namespace Snork.EventBus
                 {
                     var subscriberMethods = findState.SubscriberInfo.GetSubscriberMethods(findState.Iteration);
                     foreach (var subscriberMethod in subscriberMethods)
-                        if (findState.CheckAdd(subscriberMethod.Method, subscriberMethod.EventType))
+                        if (findState.CheckAdd(subscriberMethod.MethodInfo, subscriberMethod.EventType))
                             findState.SubscriberMethods.Add(subscriberMethod);
                 }
                 else
@@ -74,12 +76,12 @@ namespace Snork.EventBus
                 }
 
                 findState.MoveToSuperclass();
-                findState.Iteration++;
             }
 
             //remove duplicate signatures
-            var tmp =  GetMethodsAndRelease(findState);
-            var uniques = tmp.OrderBy(i => i.Iteration).GroupBy(i => i.Method.ToString()).Select(i => i.FirstOrDefault()).ToList();
+            var tmp = GetMethodsAndRelease(findState);
+            var uniques = tmp.OrderBy(i => i.Iteration).GroupBy(i => i.MethodInfo.ToString())
+                .Select(i => i.FirstOrDefault()).ToList();
             return uniques;
         }
 
@@ -155,29 +157,18 @@ namespace Snork.EventBus
             MethodInfo[] methods;
             try
             {
-                // This is faster than getMethods, especially when subscribers are fat classes like Activities
                 methods = findState.Type.GetMethods();
             }
-            catch (Exception th)
+            catch (Exception exception)
             {
-                // Workaround for java.lang.NoClassDefFoundError, see https://github.com/greenrobot/EventBus/issues/149
-                try
-                {
-                    methods = findState.Type.GetMethods();
-                }
-                catch (Exception error)
-                {
-                    // super class of NoClassDefFoundError to be a bit more broad...
-                    var msg = $"Could not inspect methods of {findState.Type.FullName}";
-                    if (_ignoreGeneratedIndex)
-                        msg += ". Please consider using EventBus annotation processor to avoid reflection.";
-                    else
-                        msg += ". Please make this class visible to EventBus annotation processor to avoid reflection.";
+                // super class of NoClassDefFoundError to be a bit more broad...
+                var msg = $"Could not inspect methods of {findState.Type.FullName}";
+                if (_ignoreGeneratedIndex)
+                    msg += ". Please consider using EventBus annotation processor to avoid reflection.";
+                else
+                    msg += ". Please make this class visible to EventBus annotation processor to avoid reflection.";
 
-                    throw new EventBusException(msg, error);
-                }
-
-                findState.SkipSuperClasses = true;
+                throw new EventBusException(msg, exception);
             }
 
             foreach (var item in methods.Select(i => new
@@ -200,11 +191,11 @@ namespace Snork.EventBus
                         var subscribeAttribute = subscribeAttributes.FirstOrDefault();
                         if (subscribeAttribute != null)
                         {
-                            var messageType = parameterInfos[0].ParameterType;
-                            if (findState.CheckAdd(method, messageType))
+                            var eventType = parameterInfos[0].ParameterType;
+                            if (findState.CheckAdd(method, eventType))
                             {
                                 var threadMode = subscribeAttribute.ThreadMode;
-                                findState.SubscriberMethods.Add(new SubscriberMethod(method, messageType, threadMode,
+                                findState.SubscriberMethods.Add(new SubscriberMethod(method, eventType, threadMode,
                                     subscribeAttribute.Priority, subscribeAttribute.Sticky, findState.Iteration));
                             }
                         }
@@ -263,36 +254,36 @@ namespace Snork.EventBus
                 SubscriberInfo = null;
             }
 
-            public bool CheckAdd(MethodInfo method, Type messageType)
+            public bool CheckAdd(MethodInfo method, Type eventType)
             {
-                // 2 level check: 1st level with message type only (fast), 2nd level with complete signature when required.
-                // Usually a subscriber doesn't have methods listening to the same message type.
-                var existing = _anyMethodByEventType.Put(messageType, method);
+                // 2 level check: 1st level with event type only (fast), 2nd level with complete signature when required.
+                // Usually a subscriber doesn't have methods listening to the same event type.
+                var existing = _anyMethodByEventType.Put(eventType, method);
                 if (existing == null) return true;
 
                 if (existing is MethodInfo info)
                 {
-                    if (!CheckAddWithMethodSignature(info, messageType))
+                    if (!CheckAddWithMethodSignature(info, eventType))
                         // Paranoia check
                         throw new InvalidOperationException();
 
                     // Put any non-MethodInfo object to "consume" the existing MethodInfo
-                    _anyMethodByEventType[messageType] = this;
+                    _anyMethodByEventType[eventType] = this;
                 }
 
-                return CheckAddWithMethodSignature(method, messageType);
+                return CheckAddWithMethodSignature(method, eventType);
             }
 
-            private bool CheckAddWithMethodSignature(MethodInfo method, Type messageType)
+            private bool CheckAddWithMethodSignature(MethodInfo method, Type eventType)
             {
                 _methodKeyBuilder.Length = 0;
                 _methodKeyBuilder.Append(method.Name);
-                _methodKeyBuilder.Append('>').Append(messageType.Name);
+                _methodKeyBuilder.Append('>').Append(eventType.Name);
 
                 var methodKey = _methodKeyBuilder.ToString();
                 var methodType = method.DeclaringType;
                 var methodTypeOld = _subscriberTypeByMethodKey.Put(methodKey, methodType);
-                if (methodTypeOld == null || methodTypeOld.IsAssignableFromExt(methodType))
+                if (methodTypeOld == null || methodTypeOld.IsAssignableFrom(methodType))
                     // Only Add if not already found in a sub class
                     return true;
 
@@ -303,26 +294,8 @@ namespace Snork.EventBus
 
             public void MoveToSuperclass()
             {
-                if (SkipSuperClasses)
-                {
-                    Type = null;
-                }
-                else
-                {
-                    //if (Type == typeof(object))
-                    //{
-                    //    Type = null;
-                    //    return;
-                    //}
-
-                    if (Type != null)
-                    {
-                        Type = Type.BaseType;
-                        //if (Type != null)
-                        //    if (Type == typeof(object))
-                        //        Type = null;
-                    }
-                }
+                Iteration++;
+                Type = SkipSuperClasses ? null : Type?.BaseType;
             }
         }
     }

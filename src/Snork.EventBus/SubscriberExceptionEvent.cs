@@ -3,15 +3,14 @@ using System;
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     This Event is posted by EventBus when an exception occurs inside a subscriber's message handling method.
-    ///     @author Markus
+    ///     This Event is posted when an exception occurs inside a subscriber's event handling method.
     /// </summary>
-    public sealed class SubscriberExceptionMessage
+    public sealed class SubscriberExceptionEvent
     {
         /// <summary>
-        ///     The original message that could not be delivered to any subscriber.
+        ///     The original event that could not be delivered to any subscriber.
         /// </summary>
-        public object OriginalMessage { get; }
+        public object OriginalEvent { get; }
 
         /// <summary>
         ///     The subscriber that threw the Exception.
@@ -19,7 +18,7 @@ namespace Snork.EventBus
         public object OriginalSubscriber { get; }
 
         /// <summary>
-        ///     The <see cref="EventBus"/> instance to with the original message was posted to.
+        ///     The <see cref="EventBus"/> instance to with the original event was posted to.
         /// </summary>
         public EventBus EventBus { get; }
 
@@ -28,12 +27,12 @@ namespace Snork.EventBus
         /// </summary>
         public Exception Exception { get; }
 
-        public SubscriberExceptionMessage(EventBus eventBus, Exception exception, object originalMessage,
+        public SubscriberExceptionEvent(EventBus eventBus, Exception exception, object originalEvent,
             object originalSubscriber)
         {
             this.EventBus = eventBus;
             this.Exception = exception;
-            this.OriginalMessage = originalMessage;
+            this.OriginalEvent = originalEvent;
             this.OriginalSubscriber = originalSubscriber;
         }
     }

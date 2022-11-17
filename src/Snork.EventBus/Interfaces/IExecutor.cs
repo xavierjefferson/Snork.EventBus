@@ -1,4 +1,4 @@
-namespace Snork.EventBus
+namespace Snork.EventBus.Interfaces
 {
     public interface IExecutor
     {

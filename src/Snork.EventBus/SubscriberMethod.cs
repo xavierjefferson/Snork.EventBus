@@ -6,23 +6,23 @@ using System.Text;
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     Used internally by EventBus and generated subscriber indexes.
+    ///     Used internally by generated subscriber indexes.
     /// </summary>
     public class SubscriberMethod
     {
-        public SubscriberMethod(MethodInfo method, Type messageType, ThreadModeEnum threadMode, int priority,
+        public SubscriberMethod(MethodInfo methodInfo, Type eventType, ThreadModeEnum threadMode, int priority,
             bool sticky, int iteration)
         {
-            Method = method;
+            MethodInfo = methodInfo;
             ThreadMode = threadMode;
-            EventType = messageType;
+            EventType = eventType;
             Priority = priority;
             Sticky = sticky;
             Iteration = iteration;
         }
 
         public Type EventType { get; }
-        public MethodInfo Method { get; }
+        public MethodInfo MethodInfo { get; }
         public int Priority { get; }
         public bool Sticky { get; }
         public int Iteration { get; }
@@ -56,8 +56,8 @@ namespace Snork.EventBus
             {
                 // MethodInfo.toString has more overhead, just take relevant parts of the method
                 var builder = new StringBuilder(64);
-                builder.Append(Method.DeclaringType.FullName);
-                builder.Append('#').Append(Method.Name);
+                builder.Append(MethodInfo.DeclaringType.FullName);
+                builder.Append('#').Append(MethodInfo.Name);
                 builder.Append('(').Append(EventType.Name);
                 MethodString = builder.ToString();
             }
@@ -65,7 +65,7 @@ namespace Snork.EventBus
 
         public override int GetHashCode()
         {
-            return Method.GetHashCode();
+            return MethodInfo.GetHashCode();
         }
     }
 }

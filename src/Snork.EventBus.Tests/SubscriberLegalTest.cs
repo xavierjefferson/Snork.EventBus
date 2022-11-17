@@ -1,37 +1,27 @@
-/*
- * Copyright (C) 2012-2016 Markus Junginger, greenrobot (http://greenrobot.org)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    /**
- * @author Markus Junginger, greenrobot
- */
     public class SubscriberLegalTest : TestBase
     {
+        //    public class Static {
+        //        @Subscribe
+        //        public static void OnEvent(string @event) {
+        //        }
+        //    }
+        public SubscriberLegalTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
         [Fact]
         public void TestSubscriberLegal()
         {
             EventBus.Register(this);
             EventBus.Post("42");
             EventBus.Unregister(this);
-            Assert.Equal(1, MessageCount);
+            Assert.Equal(1, EventCount);
         }
 
         // With Build time verification, some of these tests are obsolete (and cause problems during Build)
@@ -58,18 +48,18 @@ namespace Snork.EventBus.Tests
             EventBus.Register(new AbstractImpl(this));
 
             EventBus.Post("42");
-            Assert.Equal(1, MessageCount);
+            Assert.Equal(1, EventCount);
         }
 
         [Subscribe]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
-            TrackMessage(message);
+            TrackEvent(@event);
         }
 
         //    public class NotPublic {
         //        @Subscribe
-        //        void OnMessage(string message) {
+        //        void OnEvent(string @event) {
         //        }
         //    }
 
@@ -80,7 +70,7 @@ namespace Snork.EventBus.Tests
             }
 
             [Subscribe]
-            public abstract void OnMessage(string message);
+            public abstract void OnEvent(string @event);
         }
 
         public class AbstractImpl : Abstract
@@ -91,19 +81,10 @@ namespace Snork.EventBus.Tests
 
 
             [Subscribe]
-            public override void OnMessage(string message)
+            public override void OnEvent(string @event)
             {
-                OuterTest.TrackMessage(message);
+                OuterTest.TrackEvent(@event);
             }
-        }
-
-        //    public class Static {
-        //        @Subscribe
-        //        public static void OnMessage(string message) {
-        //        }
-        //    }
-        public SubscriberLegalTest(ITestOutputHelper output) : base(output)
-        {
         }
     }
 }

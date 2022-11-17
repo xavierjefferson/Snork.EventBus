@@ -5,7 +5,7 @@ namespace Snork.EventBus.Tests.Subscribers
     public class BadExceptionSubscriber
     {
         [Subscribe]
-        public virtual void OnMessage(SubscriberExceptionMessage message)
+        public virtual void OnEvent(SubscriberExceptionEvent @event)
         {
             throw new Exception("Bad");
         }

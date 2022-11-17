@@ -1,51 +1,43 @@
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace Snork.EventBus
 {
     public sealed class PendingPost
     {
-        private static readonly Queue<PendingPost> PendingPostPool = new Queue<PendingPost>();
+        private static readonly ConcurrentQueue<PendingPost> PendingPostPool = new ConcurrentQueue<PendingPost>();
 
-        private PendingPost(object message, Subscription subscription)
+        private PendingPost(object @event, Subscription subscription)
         {
-            Message = message;
+            Event = @event;
             Subscription = subscription;
         }
 
         internal PendingPost? Next { get; set; }
 
-        public object? Message { get; private set; }
+        public object? Event { get; private set; }
         public Subscription? Subscription { get; private set; }
 
 
-        public static PendingPost ObtainPendingPost(Subscription subscription, object message)
+        public static PendingPost ObtainPendingPost(Subscription subscription, object @event)
         {
-            lock (PendingPostPool)
+            if (PendingPostPool.TryDequeue(out var pendingPost))
             {
-                var size = PendingPostPool.Count;
-                if (size > 0)
-                {
-                    var pendingPost = PendingPostPool.Dequeue();
-                    pendingPost.Message = message;
-                    pendingPost.Subscription = subscription;
-                    pendingPost.Next = null;
-                    return pendingPost;
-                }
-
-                return new PendingPost(message, subscription);
+                pendingPost.Event = @event;
+                pendingPost.Subscription = subscription;
+                pendingPost.Next = null;
+                return pendingPost;
             }
+
+            return new PendingPost(@event, subscription);
         }
 
         public static void ReleasePendingPost(PendingPost pendingPost)
         {
-            lock (PendingPostPool)
-            {
-                pendingPost.Message = null;
-                pendingPost.Subscription = null;
-                pendingPost.Next = null;
+            pendingPost.Event = null;
+            pendingPost.Subscription = null;
+            pendingPost.Next = null;
+            PendingPostPool.Enqueue(pendingPost);
 
-                PendingPostPool.Enqueue(pendingPost);
-            }
         }
     }
 }

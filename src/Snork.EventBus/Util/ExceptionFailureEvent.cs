@@ -3,14 +3,14 @@ using System;
 namespace Snork.EventBus.Util
 {
     /// <summary>
-    ///     A generic failure message, which can be used by apps to propagate thrown exceptions.
-    ///     Used as default failure message by <see cref="AsyncExecutor" />.
+    ///     A generic failure event, which can be used by apps to propagate thrown exceptions.
+    ///     Used as default failure event by <see cref="AsyncExecutor" />.
     /// </summary>
-    public class ExceptionFailureMessage : IExecutionScopeContainer
+    public class ExceptionFailureEvent : IExecutionScopeContainer
     {
         public bool SuppressErrorUi { get; }
 
-        public ExceptionFailureMessage(Exception exception)
+        public ExceptionFailureEvent(Exception exception)
         {
             Exception = exception;
             SuppressErrorUi = false;
@@ -20,7 +20,7 @@ namespace Snork.EventBus.Util
         ///     @param suppressErrorUi
         ///     true indicates to the receiver that no error UI (e.g. dialog) should now displayed.
         /// </summary>
-        public ExceptionFailureMessage(Exception exception, bool suppressErrorUi)
+        public ExceptionFailureEvent(Exception exception, bool suppressErrorUi)
         {
             Exception = exception;
             this.SuppressErrorUi = suppressErrorUi;

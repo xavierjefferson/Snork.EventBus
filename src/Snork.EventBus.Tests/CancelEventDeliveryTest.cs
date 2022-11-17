@@ -5,8 +5,12 @@ using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    public class CancelMessageDeliveryTest : TestBase
+    public class CancelEventDeliveryTest : TestBase
     {
+        public CancelEventDeliveryTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
         [Fact]
         public void TestCancel()
         {
@@ -15,11 +19,11 @@ namespace Snork.EventBus.Tests
             EventBus.Register(canceler);
             EventBus.Register(new ConfigurableCancellingSubscriber(0, false, this));
             EventBus.Post("42");
-            Assert.Equal(1, MessageCount);
+            Assert.Equal(1, EventCount);
 
             EventBus.Unregister(canceler);
             EventBus.Post("42");
-            Assert.Equal(1 + 2, MessageCount);
+            Assert.Equal(1 + 2, EventCount);
         }
 
         [Fact]
@@ -29,21 +33,21 @@ namespace Snork.EventBus.Tests
             EventBus.Register(new ConfigurableCancellingSubscriber(1, false, this));
             EventBus.Register(new ConfigurableCancellingSubscriber(3, false, this));
             EventBus.Post("42");
-            Assert.Equal(2, MessageCount);
+            Assert.Equal(2, EventCount);
         }
 
         [Fact]
-        public void TestCancelOutsideMessageHandler()
+        public void TestCancelOutsideEventHandler()
         {
-            Assert.Throws<EventBusException>(() => { EventBus.CancelMessageDelivery(this); });
+            Assert.Throws<EventBusException>(() => { EventBus.CancelEventDelivery(this); });
         }
 
         [Fact]
-        public void TestCancelWrongMessage()
+        public void TestCancelWrongEvent()
         {
             EventBus.Register(new CancellingSubscriber(this));
             EventBus.Post("42");
-            Assert.Equal(0, MessageCount);
+            Assert.Equal(0, EventCount);
             Assert.NotNull(LastException);
         }
 
@@ -56,11 +60,11 @@ namespace Snork.EventBus.Tests
             }
 
             [Subscribe(ThreadModeEnum.Main)]
-            public virtual void OnMessageMainThread(string message)
+            public virtual void OnEventMainThread(string @event)
             {
                 try
                 {
-                    OuterTest.EventBus.CancelMessageDelivery(message);
+                    OuterTest.EventBus.CancelEventDelivery(@event);
                 }
                 catch (EventBusException e)
                 {
@@ -69,10 +73,6 @@ namespace Snork.EventBus.Tests
 
                 done.Signal();
             }
-        }
-
-        public CancelMessageDeliveryTest(ITestOutputHelper output) : base(output)
-        {
         }
     }
 }

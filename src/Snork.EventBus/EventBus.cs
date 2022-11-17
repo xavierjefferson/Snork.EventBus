@@ -5,23 +5,24 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Snork.EventBus.Interfaces;
 
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     EventBus is a central publish/subscribe message system for C#.
+    ///     EventBus is a central publish/subscribe event system for C#.
     ///     Events are posted (<see cref="Post" />) to the bus, which delivers it to subscribers that have a matching handler
-    ///     method for the message type.
-    ///     To receive messages, subscribers must register themselves to the bus using <see cref="Register" />.
-    ///     Once registered, subscribers receive messages until <see cref="Unregister" /> is called.
+    ///     method for the event type.
+    ///     To receive events, subscribers must register themselves to the bus using <see cref="Register" />.
+    ///     Once registered, subscribers receive events until <see cref="Unregister" /> is called.
     ///     Event handling methods must be annotated by <see cref="Subscribe" />, must be public, return nothing (void),
-    ///     and have exactly one parameter (the message).
+    ///     and have exactly one parameter (the event).
     /// </summary>
     public class EventBus
     {
         private readonly object _mutex = new object();
         private static readonly EventBusBuilder DefaultBuilder = new EventBusBuilder();
-        private static readonly Dictionary<Type, List<Type>> MessageTypesCache = new Dictionary<Type, List<Type>>();
+        private static readonly Dictionary<Type, List<Type>> EventTypesCache = new Dictionary<Type, List<Type>>();
 
         internal static EventBus? _default;
         private readonly AsyncPoster? _asyncPoster;
@@ -31,23 +32,23 @@ namespace Snork.EventBus
             new ThreadLocal<PostingThreadState>(
                 () => new PostingThreadState());
 
-        private readonly bool _messageInheritance;
+        private readonly bool _eventInheritance;
         public IExecutor? Executor { get; }
         private readonly int _indexCount;
-        private readonly bool _logNoSubscriberMessages;
+        private readonly bool _logNoSubscriberEvents;
         private readonly bool _logSubscriberExceptions;
         private readonly IPoster? _mainThreadPoster;
         private readonly IMainThreadSupport? _mainThreadSupport;
-        private readonly bool _sendNoSubscriberMessage;
-        private readonly bool _sendSubscriberExceptionMessage;
-        private readonly Dictionary<Type, object> _stickyMessages;
+        private readonly bool _sendNoSubscriberEvent;
+        private readonly bool _sendSubscriberExceptionEvent;
+        private readonly Dictionary<Type, object> _stickyEvents;
         private readonly SubscriberMethodFinder? _subscriberMethodFinder;
-        private readonly Dictionary<Type, ConcurrentList<Subscription>> _subscriptionsByMessageType;
+        private readonly Dictionary<Type, ConcurrentList<Subscription>> _subscriptionsByEventType;
         private readonly bool _throwSubscriberException;
         private readonly Dictionary<object, List<Type>> _typesBySubscriber;
 
         /// <summary>
-        ///     Creates a new EventBus instance; each instance is a separate scope in which messages are delivered.To use a
+        ///     Creates a new EventBus instance; each instance is a separate scope in which events are delivered.To use a
         ///     central bus, consider <see cref="Default" />.
         /// </summary>
         public EventBus() : this(DefaultBuilder)
@@ -57,9 +58,9 @@ namespace Snork.EventBus
         public EventBus(EventBusBuilder builder)
         {
             Logger = builder.Logger;
-            _subscriptionsByMessageType = new Dictionary<Type, ConcurrentList<Subscription>>();
+            _subscriptionsByEventType = new Dictionary<Type, ConcurrentList<Subscription>>();
             _typesBySubscriber = new Dictionary<object, List<Type>>();
-            _stickyMessages = new Dictionary<Type, object>();
+            _stickyEvents = new Dictionary<Type, object>();
             _mainThreadSupport = builder.MainThreadSupport;
             _mainThreadPoster = _mainThreadSupport?.CreatePoster(this);
             _backgroundPoster = new BackgroundPoster(this);
@@ -68,11 +69,11 @@ namespace Snork.EventBus
             _subscriberMethodFinder = new SubscriberMethodFinder(builder.SubscriberInfoIndexes,
                 builder.StrictMethodVerification, builder.IgnoreGeneratedIndex);
             _logSubscriberExceptions = builder.LogSubscriberExceptions;
-            _logNoSubscriberMessages = builder.LogNoSubscriberMessages;
-            _sendSubscriberExceptionMessage = builder.SendSubscriberExceptionEvent;
-            _sendNoSubscriberMessage = builder.SendNoSubscriberEvent;
+            _logNoSubscriberEvents = builder.LogNoSubscriberEvents;
+            _sendSubscriberExceptionEvent = builder.SendSubscriberExceptionEvent;
+            _sendNoSubscriberEvent = builder.SendNoSubscriberEvent;
             _throwSubscriberException = builder.ThrowSubscriberException;
-            _messageInheritance = builder.EventInheritance;
+            _eventInheritance = builder.EventInheritance;
             Executor = builder.Executor;
         }
 
@@ -104,16 +105,16 @@ namespace Snork.EventBus
         public static void ClearCaches()
         {
             SubscriberMethodFinder.ClearCaches();
-            lock (MessageTypesCache)
+            lock (EventTypesCache)
             {
-                MessageTypesCache.Clear();
+                EventTypesCache.Clear();
             }
         }
 
         /// <summary>
-        ///     Registers the given subscriber to receive messages. Subscribers must call <see cref="Unregister" /> once they
-        ///     are no longer interested in receiving messages.
-        ///     Subscribers have message handling methods that must be annotated by <see cref="SubscribeAttribute" />.
+        ///     Registers the given subscriber to receive events. Subscribers must call <see cref="Unregister" /> once they
+        ///     are no longer interested in receiving events.
+        ///     Subscribers have event handling methods that must be annotated by <see cref="SubscribeAttribute" />.
         ///     The <see cref="SubscribeAttribute" /> annotation also allows configuration like <see cref="ThreadModeEnum" /> and
         ///     priority.
         /// </summary>
@@ -136,21 +137,21 @@ namespace Snork.EventBus
         /// <exception cref="EventBusException"></exception>
         private void Subscribe(object subscriber, SubscriberMethod subscriberMethod)
         {
-            var messageType = subscriberMethod.EventType;
+            var eventType = subscriberMethod.EventType;
             var newSubscription = new Subscription(subscriber, subscriberMethod);
-            var subscriptions = _subscriptionsByMessageType.ContainsKey(messageType)
-                ? _subscriptionsByMessageType[messageType]
+            var subscriptions = _subscriptionsByEventType.ContainsKey(eventType)
+                ? _subscriptionsByEventType[eventType]
                 : default;
             if (subscriptions == null)
             {
                 subscriptions = new ConcurrentList<Subscription>();
-                _subscriptionsByMessageType[messageType] = subscriptions;
+                _subscriptionsByEventType[eventType] = subscriptions;
             }
             else
             {
                 if (subscriptions.Contains(newSubscription))
                     throw new EventBusException(
-                        $"Subscriber {subscriber.GetType().FullName} is already registered to message {messageType.FullName}");
+                        $"Subscriber {subscriber.GetType().FullName} is already registered to event {eventType.FullName}");
             }
 
             if (!subscriptions.Any())
@@ -159,12 +160,12 @@ namespace Snork.EventBus
             }
             else
             {
-                
-                var size = subscriptions.Count();
-                
-                for (int i = 0; i <= size; i++)
+ 
+                var count = subscriptions.Count();
+                //insert in priority order.
+                for (int i = 0; i <= count; i++)
                 {
-                    if (i == size || subscriberMethod.Priority > subscriptions[i].SubscriberMethod.Priority)
+                    if (i == count || subscriberMethod.Priority < subscriptions[i].SubscriberMethod.Priority)
                     {
                         subscriptions.Insert(i, newSubscription);
                         break;
@@ -173,32 +174,32 @@ namespace Snork.EventBus
                 
             }
 
-            List<Type>? subscribedMessageTypes;
+            List<Type>? subscribedEventTypes;
             if (_typesBySubscriber.ContainsKey(subscriber))
             {
-                subscribedMessageTypes = _typesBySubscriber[subscriber];
+                subscribedEventTypes = _typesBySubscriber[subscriber];
             }
             else
             {
-                subscribedMessageTypes = new List<Type>();
-                _typesBySubscriber[subscriber] = subscribedMessageTypes;
+                subscribedEventTypes = new List<Type>();
+                _typesBySubscriber[subscriber] = subscribedEventTypes;
             }
 
-            subscribedMessageTypes.Add(messageType);
+            subscribedEventTypes.Add(eventType);
 
             if (subscriberMethod.Sticky)
             {
-                if (_messageInheritance)
+                if (_eventInheritance)
                 {
-                    // Existing sticky messages of all subclasses of messageType have to be considered.
-                    // Note: Iterating over all messages may be inefficient with lots of sticky messages,
+                    // Existing sticky events of all subclasses of eventType have to be considered.
+                    // Note: Iterating over all events may be inefficient with lots of sticky events,
                     // thus data structure should be changed to allow a more efficient lookup
                     // (e.g. an additional map storing sub classes of super classes: Type -> List<Type>).
 
-                    foreach (var entry in _stickyMessages)
+                    foreach (var entry in _stickyEvents)
                     {
                         var candidateEventType = entry.Key;
-                        if (messageType.IsAssignableFromExt(candidateEventType))
+                        if (eventType.IsAssignableFrom(candidateEventType))
                         {
                             var stickyEvent = entry.Value;
                             CheckPostStickyEventToSubscription(newSubscription, stickyEvent);
@@ -207,7 +208,7 @@ namespace Snork.EventBus
                 }
                 else
                 {
-                    var stickyEvent = _stickyMessages.ContainsKey(messageType) ? _stickyMessages[messageType] : default;
+                    var stickyEvent = _stickyEvents.ContainsKey(eventType) ? _stickyEvents[eventType] : default;
                     CheckPostStickyEventToSubscription(newSubscription, stickyEvent);
                 }
             }
@@ -216,14 +217,14 @@ namespace Snork.EventBus
         private void CheckPostStickyEventToSubscription(Subscription newSubscription, object? stickyEvent)
         {
             if (stickyEvent != null)
-                // If the subscriber is trying to abort the message, it will fail (message is not tracked in posting state)
+                // If the subscriber is trying to abort the event, it will fail (event is not tracked in posting state)
                 // --> Strange corner case, which we don't take care of here.
                 PostToSubscription(newSubscription, stickyEvent, IsMainThread());
         }
 
         /// <summary>
         ///     Checks if the current thread is running in the main thread.
-        ///     If there is no main thread support (e.g. non-Android), "true" is always returned. In that case MAIN thread
+        ///     If there is no configured implementation of implementation of <see cref="Interfaces.IMainThreadSupport"/>, "true" is always returned. In that case MAIN thread
         ///     subscribers are always called in posting thread, and BACKGROUND subscribers are always called from a background
         ///     poster.
         /// </summary>
@@ -243,19 +244,19 @@ namespace Snork.EventBus
         ///     Only updates subscriptionsByEventType, not typesBySubscriber! Caller must update <see cref="_typesBySubscriber"/>
         /// </summary>
         [MethodImpl(MethodImplOptions.Synchronized)]
-        private void UnsubscribeByEventType(object subscriber, Type messageType)
+        private void UnsubscribeByEventType(object subscriber, Type eventType)
         {
             lock (_mutex)
             {
-                var subscriptions = _subscriptionsByMessageType.ContainsKey(messageType)
-                    ? _subscriptionsByMessageType[messageType]
+                var subscriptions = _subscriptionsByEventType.ContainsKey(eventType)
+                    ? _subscriptionsByEventType[eventType]
                     : default;
                 if (subscriptions != null) subscriptions.RemoveAll(i => i.Subscriber == subscriber);
             }
         }
 
         /// <summary>
-        ///     Unregisters the given subscriber from all message classes.
+        ///     Unregisters the given subscriber from all event classes.
         /// </summary>
         [MethodImpl(MethodImplOptions.Synchronized)]
         public void Unregister(object subscriber)
@@ -263,7 +264,7 @@ namespace Snork.EventBus
             var subscribedTypes = _typesBySubscriber.ContainsKey(subscriber) ? _typesBySubscriber[subscriber] : null;
             if (subscribedTypes != null)
             {
-                foreach (var messageType in subscribedTypes) UnsubscribeByEventType(subscriber, messageType);
+                foreach (var eventType in subscribedTypes) UnsubscribeByEventType(subscriber, eventType);
                 _typesBySubscriber.Remove(subscriber);
             }
             else
@@ -273,14 +274,14 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     Posts the given message to the message bus.
+        ///     Posts the given events to the event bus.
         /// </summary>
-        public void Post(params object[] messages)
+        public void Post(params object[] events)
         {
             var postingState = _currentPostingThreadState.Value;
             var eventQueue = postingState.EventQueue;
-            foreach (var message in messages)
-                eventQueue.Enqueue(message);
+            foreach (var @event in events)
+                eventQueue.Enqueue(@event);
 
 
             if (postingState.IsPosting) return;
@@ -300,82 +301,82 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     Called from a subscriber's message handling method, further message delivery will be canceled. Subsequent
+        ///     Called from a subscriber's event handling method, further event delivery will be canceled. Subsequent
         ///     subscribers
-        ///     won't receive the message. Events are usually canceled by higher priority subscribers (see
+        ///     won't receive the event. Events are usually canceled by higher priority subscribers (see
         ///     <see cref="SubscribeAttribute.Priority" />)
-        ///     Canceling is restricted to message handling methods running in posting thread
+        ///     Canceling is restricted to event handling methods running in posting thread
         ///     <see cref="ThreadModeEnum.Posting" />.
         /// </summary>
-        public void CancelMessageDelivery(object? message)
+        public void CancelEventDelivery(object? @event)
         {
             var postingState = _currentPostingThreadState.Value;
             if (!postingState.IsPosting)
                 throw new EventBusException(
-                    "This method may only be called from inside message handling methods on the posting thread");
-            if (message == null)
+                    "This method may only be called from inside event handling methods on the posting thread");
+            if (@event == null)
                 throw new EventBusException("Event may not be null");
-            if (postingState.Message != message)
-                throw new EventBusException("Only the currently handled message may be aborted");
+            if (postingState.Event != @event)
+                throw new EventBusException("Only the currently handled event may be aborted");
             if (postingState.Subscription.SubscriberMethod.ThreadMode != ThreadModeEnum.Posting)
-                throw new EventBusException(" message handlers may only abort the incoming message");
+                throw new EventBusException(" event handlers may only abort the incoming event");
 
             postingState.Canceled = true;
         }
 
         /// <summary>
-        ///     Posts the given message to the message bus and holds on to the message (because it is sticky). The most recent
+        ///     Posts the given event to the event bus and holds on to the event (because it is sticky). The most recent
         ///     sticky
-        ///     message of an message's type is kept in memory for future access by subscribers using
+        ///     event of an event's type is kept in memory for future access by subscribers using
         ///     <see cref="SubscribeAttribute.Sticky" />.
         /// </summary>
-        public void PostSticky(object message)
+        public void PostSticky(object @event)
         {
-            lock (_stickyMessages)
+            lock (_stickyEvents)
             {
-                _stickyMessages[message.GetType()] = message;
+                _stickyEvents[@event.GetType()] = @event;
             }
 
             // Should be posted after it is putted, in case the subscriber wants to Remove immediately
-            Post(message);
+            Post(@event);
         }
 
         /// <summary>
-        ///     Gets the most recent sticky message for the given type. See <see cref="PostSticky" />
+        ///     Gets the most recent sticky event for the given type. See <see cref="PostSticky" />
         /// </summary>
-        public object? GetStickyMessage(Type messageType)
+        public object? GetStickyEvent(Type eventType)
         {
-            lock (_stickyMessages)
+            lock (_stickyEvents)
             {
-                return _stickyMessages.ContainsKey(messageType) ? _stickyMessages[messageType] : default;
+                return _stickyEvents.ContainsKey(eventType) ? _stickyEvents[eventType] : default;
             }
         }
 
         /// <summary>
-        ///     Gets the most recent sticky message for the given type.
+        ///     Gets the most recent sticky event for the given type.
         ///     See <see cref="PostSticky" />
         /// </summary>
-        public T GetStickyMessage<T>()
+        public T GetStickyEvent<T>()
         {
-            lock (_stickyMessages)
+            lock (_stickyEvents)
             {
-                var messageType = typeof(T);
-                return _stickyMessages.ContainsKey(messageType) ? (T)_stickyMessages[messageType] : default;
+                var eventType = typeof(T);
+                return _stickyEvents.ContainsKey(eventType) ? (T)_stickyEvents[eventType] : default;
             }
         }
 
         /// <summary>
-        ///     Remove and gets the recent sticky message for the given message type.
+        ///     Remove and gets the recent sticky event for the given event type.
         ///     See <see cref="PostSticky" />
         /// </summary>
-        public object? RemoveStickyMessage(Type messageType)
+        public object? RemoveStickyEvent(Type eventType)
         {
-            lock (_stickyMessages)
+            lock (_stickyEvents)
             {
-                if (_stickyMessages.ContainsKey(messageType))
+                if (_stickyEvents.ContainsKey(eventType))
                 {
-                    var value = _stickyMessages[messageType];
-                    _stickyMessages.Remove(messageType);
+                    var value = _stickyEvents[eventType];
+                    _stickyEvents.Remove(eventType);
                     return value;
                 }
 
@@ -384,18 +385,18 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     Remove and gets the recent sticky message for the given message type.
+        ///     Remove and gets the recent sticky event for the given event type.
         ///     See <see cref="PostSticky" />
         /// </summary>
-        public T RemoveStickyMessage<T>()
+        public T RemoveStickyEvent<T>()
         {
-            lock (_stickyMessages)
+            lock (_stickyEvents)
             {
-                var messageType = typeof(T);
-                if (_stickyMessages.ContainsKey(messageType))
+                var eventType = typeof(T);
+                if (_stickyEvents.ContainsKey(eventType))
                 {
-                    var result = _stickyMessages[messageType];
-                    _stickyMessages.Remove(messageType);
+                    var result = _stickyEvents[eventType];
+                    _stickyEvents.Remove(eventType);
                     return (T)result;
                 }
 
@@ -404,18 +405,18 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     Removes the sticky message if it equals to the given message.
-        ///     @return true if the messages matched and the sticky message was removed.
+        ///     Removes the sticky event if it equals to the given event.
+        ///     @return true if the events matched and the sticky event was removed.
         /// </summary>
-        public bool RemoveStickyMessage(object message)
+        public bool RemoveStickyEvent(object @event)
         {
             lock (_mutex)
             {
-                var messageType = message.GetType();
-                var existingEvent = _stickyMessages.ContainsKey(messageType) ? _stickyMessages[messageType] : default;
-                if (message.Equals(existingEvent))
+                var eventType = @event.GetType();
+                var existingEvent = _stickyEvents.ContainsKey(eventType) ? _stickyEvents[eventType] : default;
+                if (@event.Equals(existingEvent))
                 {
-                    _stickyMessages.Remove(messageType);
+                    _stickyEvents.Remove(eventType);
                     return true;
                 }
 
@@ -424,33 +425,33 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     Removes all sticky messages.
+        ///     Removes all sticky events.
         /// </summary>
-        public void RemoveAllStickyMessages()
+        public void RemoveAllStickyEvents()
         {
             lock (_mutex)
             {
-                _stickyMessages.Clear();
+                _stickyEvents.Clear();
             }
         }
 
-        public bool HasSubscriberForMessage<T>()
+        public bool HasSubscriberForEvent<T>()
         {
-            return HasSubscriberForMessage(typeof(T));
+            return HasSubscriberForEvent(typeof(T));
         }
 
-        public bool HasSubscriberForMessage(Type messageType)
+        public bool HasSubscriberForEvent(Type eventType)
         {
-            var messageTypes = LookupAllMessageTypes(messageType);
+            var eventTypes = LookupAllEventTypes(eventType);
 
 
-            foreach (var type in messageTypes)
+            foreach (var type in eventTypes)
             {
                 ConcurrentList<Subscription>? subscriptions;
                 lock (_mutex)
                 {
-                    subscriptions = _subscriptionsByMessageType.ContainsKey(type)
-                        ? _subscriptionsByMessageType[type]
+                    subscriptions = _subscriptionsByEventType.ContainsKey(type)
+                        ? _subscriptionsByEventType[type]
                         : default;
                 }
 
@@ -461,57 +462,56 @@ namespace Snork.EventBus
             return false;
         }
 
-        private void PostSingleEvent(object message, PostingThreadState postingState)
+        private void PostSingleEvent(object @event, PostingThreadState postingState)
         {
-            var messageType = message.GetType();
+            var eventType = @event.GetType();
             var subscriptionFound = false;
-            if (_messageInheritance)
+            if (_eventInheritance)
             {
-                var messageTypes = LookupAllMessageTypes(messageType);
-                foreach (var type in messageTypes)
-                    subscriptionFound |= PostSingleEventForEventType(message, postingState, type);
+                var eventTypes = LookupAllEventTypes(eventType);
+                foreach (var type in eventTypes)
+                    subscriptionFound |= PostSingleEventForEventType(@event, postingState, type);
             }
             else
             {
-                subscriptionFound = PostSingleEventForEventType(message, postingState, messageType);
+                subscriptionFound = PostSingleEventForEventType(@event, postingState, eventType);
             }
 
             if (!subscriptionFound)
             {
-                if (_logNoSubscriberMessages)
-                    Logger.LogDebug($"No subscribers registered for message type {messageType.FullName}");
-                if (_sendNoSubscriberMessage && messageType != typeof(NoSubscriberMessage) &&
-                    messageType != typeof(SubscriberExceptionMessage))
-                    Post(new NoSubscriberMessage(this, message));
+                if (_logNoSubscriberEvents)
+                    Logger.LogDebug($"No subscribers registered for event type {eventType.FullName}");
+                if (_sendNoSubscriberEvent && eventType != typeof(NoSubscriberEvent) &&
+                    eventType != typeof(SubscriberExceptionEvent))
+                    Post(new NoSubscriberEvent(this, @event));
             }
         }
 
-        private bool PostSingleEventForEventType(object message, PostingThreadState postingState, Type messageType)
+        private bool PostSingleEventForEventType(object @event, PostingThreadState postingState, Type eventType)
         {
             ConcurrentList<Subscription>? subscriptions;
             lock (_mutex)
             {
-                subscriptions = _subscriptionsByMessageType.ContainsKey(messageType)
-                    ? _subscriptionsByMessageType[messageType]
+                subscriptions = _subscriptionsByEventType.ContainsKey(eventType)
+                    ? _subscriptionsByEventType[eventType]
                     : default;
             }
 
             if (subscriptions != null && subscriptions.Any())
             {
-                var orderedSubscriptions = subscriptions.OrderBy(i=>i.SubscriberMethod.Priority).ToList();
-                foreach (var subscription in orderedSubscriptions)
+                foreach (var subscription in subscriptions)
                 {
-                    postingState.Message = message;
+                    postingState.Event = @event;
                     postingState.Subscription = subscription;
                     bool aborted;
                     try
                     {
-                        PostToSubscription(subscription, message, postingState.IsMainThread);
+                        PostToSubscription(subscription, @event, postingState.IsMainThread);
                         aborted = postingState.Canceled;
                     }
                     finally
                     {
-                        postingState.Message = null;
+                        postingState.Event = null;
                         postingState.Subscription = null;
                         postingState.Canceled = false;
                     }
@@ -525,34 +525,34 @@ namespace Snork.EventBus
             return false;
         }
 
-        private void PostToSubscription(Subscription subscription, object message, bool isMainThread)
+        private void PostToSubscription(Subscription subscription, object @event, bool isMainThread)
         {
             switch (subscription.SubscriberMethod.ThreadMode)
             {
                 case ThreadModeEnum.Posting:
-                    InvokeSubscriber(subscription, message);
+                    InvokeSubscriber(subscription, @event);
                     break;
                 case ThreadModeEnum.Main:
                     if (isMainThread)
-                        InvokeSubscriber(subscription, message);
+                        InvokeSubscriber(subscription, @event);
                     else
-                        _mainThreadPoster.Enqueue(subscription, message);
+                        _mainThreadPoster.Enqueue(subscription, @event);
                     break;
                 case ThreadModeEnum.MainOrdered:
                     if (_mainThreadPoster != null)
-                        _mainThreadPoster.Enqueue(subscription, message);
+                        _mainThreadPoster.Enqueue(subscription, @event);
                     else
                         // temporary: technically not correct as poster not decoupled from subscriber
-                        InvokeSubscriber(subscription, message);
+                        InvokeSubscriber(subscription, @event);
                     break;
                 case ThreadModeEnum.Background:
                     if (isMainThread)
-                        _backgroundPoster.Enqueue(subscription, message);
+                        _backgroundPoster.Enqueue(subscription, @event);
                     else
-                        InvokeSubscriber(subscription, message);
+                        InvokeSubscriber(subscription, @event);
                     break;
                 case ThreadModeEnum.Async:
-                    _asyncPoster.Enqueue(subscription, message);
+                    _asyncPoster.Enqueue(subscription, @event);
                     break;
                 default:
                     throw new InvalidOperationException(
@@ -563,84 +563,84 @@ namespace Snork.EventBus
         /// <summary>
         ///     Looks up all Type objects including super classes and interfaces.Should also work for interfaces.
         /// </summary>
-        private static List<Type> LookupAllMessageTypes(Type messageType)
+        private static List<Type> LookupAllEventTypes(Type eventType)
         {
-            lock (MessageTypesCache)
+            lock (EventTypesCache)
             {
-                var messageTypes = MessageTypesCache.ContainsKey(messageType)
-                    ? MessageTypesCache[messageType]
+                var eventTypes = EventTypesCache.ContainsKey(eventType)
+                    ? EventTypesCache[eventType]
                     : default;
-                if (messageTypes == null)
+                if (eventTypes == null)
                 {
-                    messageTypes = new List<Type>();
-                    var type = messageType;
+                    eventTypes = new List<Type>();
+                    var type = eventType;
                     while (type != null)
                     {
-                        messageTypes.Add(type);
-                        AddInterfaces(messageTypes, type.GetInterfaces());
+                        eventTypes.Add(type);
+                        AddInterfaces(eventTypes, type.GetInterfaces());
                         type = type.BaseType;
                     }
 
-                    MessageTypesCache[messageType] = messageTypes;
+                    EventTypesCache[eventType] = eventTypes;
                 }
 
-                return messageTypes;
+                return eventTypes;
             }
         }
 
         /// <summary>
         ///     Recurses through super interfaces.
         /// </summary>
-        private static void AddInterfaces(List<Type> messageTypes, Type[] interfaces)
+        private static void AddInterfaces(List<Type> eventTypes, Type[] interfaces)
         {
             foreach (var interfaceType in interfaces)
-                if (!messageTypes.Contains(interfaceType))
+                if (!eventTypes.Contains(interfaceType))
                 {
-                    messageTypes.Add(interfaceType);
-                    AddInterfaces(messageTypes, interfaceType.GetInterfaces());
+                    eventTypes.Add(interfaceType);
+                    AddInterfaces(eventTypes, interfaceType.GetInterfaces());
                 }
         }
 
         /// <summary>
         ///     Invokes the subscriber if the subscriptions is still active. Skipping subscriptions prevents race conditions
-        ///     between <see cref="Unregister" /> and message delivery. Otherwise the message might be delivered after the
+        ///     between <see cref="Unregister" /> and event delivery. Otherwise the event might be delivered after the
         ///     subscriber unregistered.This is particularly important for main thread delivery and registrations bound to the
         ///     live cycle of an Activity or Fragment.
         /// </summary>
         public object? InvokeSubscriber(PendingPost pendingPost)
         {
-            var message = pendingPost.Message;
+            var @event = pendingPost.Event;
             var subscription = pendingPost.Subscription;
             PendingPost.ReleasePendingPost(pendingPost);
-            if (subscription != null && subscription.Active) return InvokeSubscriber(subscription, message);
+            if (subscription != null && subscription.Active) return InvokeSubscriber(subscription, @event);
             return null;
         }
 
-        public object? InvokeSubscriber(Subscription subscription, object message)
+        public object? InvokeSubscriber(Subscription subscription, object @event)
         {
             try
             {
-                return subscription.SubscriberMethod.Method.Invoke(subscription.Subscriber, new[] { message });
+                return subscription.SubscriberMethod.MethodInfo.Invoke(subscription.Subscriber, new[] { @event });
             }
             catch (TargetInvocationException e)
             {
-                HandleSubscriberException(subscription, message, e.InnerException);
+                HandleSubscriberException(subscription, @event, e.InnerException);
                 return null;
             }
         }
 
-        private void HandleSubscriberException(Subscription subscription, object message, Exception cause)
+        private void HandleSubscriberException(Subscription subscription, object @event, Exception cause)
         {
-            if (message is SubscriberExceptionMessage exceptionEvent)
+            if (@event is SubscriberExceptionEvent exceptionEvent)
             {
                 if (_logSubscriberExceptions)
                 {
-                    // Don't send another SubscriberExceptionEvent to avoid infinite message recursion, just log
+                    // Don't send another SubscriberExceptionEvent to avoid infinite event recursion, just log
                     Logger.LogCritical(
                         $"SubscriberExceptionEvent subscriber {subscription.Subscriber.GetType().FullName} threw an exception",
                         cause);
                     Logger.LogCritical(
-                        $"Initial message {exceptionEvent.OriginalMessage} caused exception in {exceptionEvent.OriginalSubscriber}, {exceptionEvent.Exception.Message}");
+                        $"Initial event {exceptionEvent.OriginalEvent} caused exception in {exceptionEvent.OriginalSubscriber}, {exceptionEvent.Exception.Message}");
                 }
             }
             else
@@ -648,11 +648,11 @@ namespace Snork.EventBus
                 if (_throwSubscriberException) throw new EventBusException("Invoking subscriber failed", cause);
                 if (_logSubscriberExceptions)
                     Logger.LogCritical(
-                        $"Could not dispatch message: {message.GetType().FullName} to subscribing class {subscription.Subscriber.GetType().FullName}",
+                        $"Could not dispatch event: {@event.GetType().FullName} to subscribing class {subscription.Subscriber.GetType().FullName}",
                         cause);
-                if (_sendSubscriberExceptionMessage)
+                if (_sendSubscriberExceptionEvent)
                 {
-                    var exEvent = new SubscriberExceptionMessage(this, cause, message,
+                    var exEvent = new SubscriberExceptionEvent(this, cause, @event,
                         subscription.Subscriber);
                     Post(exEvent);
                 }
@@ -661,7 +661,7 @@ namespace Snork.EventBus
 
         public override string ToString()
         {
-            return $"EventBus[indexCount={_indexCount}, eventInheritance={_messageInheritance}]";
+            return $"EventBus[indexCount={_indexCount}, eventInheritance={_eventInheritance}]";
         }
 
         /// <summary>
@@ -673,15 +673,15 @@ namespace Snork.EventBus
             public bool Canceled { get; set; }
             public bool IsMainThread { get; set; }
             public bool IsPosting { get; set; }
-            public object? Message { get; set; }
+            public object? Event { get; set; }
             public Subscription? Subscription { get; set; }
         }
 
-        // Just an idea: we could provide a callback to post() to be notified, an alternative would be messages, of course...
+        // Just an idea: we could provide a callback to post() to be notified, an alternative would be events, of course...
         //// public ////
         private interface PostCallback
         {
-            void onPostCompleted(List<SubscriberExceptionMessage> exceptionEvents);
+            void onPostCompleted(List<SubscriberExceptionEvent> exceptionEvents);
         }
     }
 }

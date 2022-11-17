@@ -1,9 +1,10 @@
 using System;
+using Snork.EventBus.Interfaces;
 
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     Posts messages in background.
+    ///     Posts events in background.
     /// </summary>
     internal class AsyncPoster : IRunnable, IPoster
     {
@@ -17,9 +18,9 @@ namespace Snork.EventBus
             _queue = new PendingPostQueue();
         }
 
-        public void Enqueue(Subscription subscription, object message)
+        public void Enqueue(Subscription subscription, object @event)
         {
-            var pendingPost = PendingPost.ObtainPendingPost(subscription, message);
+            var pendingPost = PendingPost.ObtainPendingPost(subscription, @event);
             _queue.Enqueue(pendingPost);
             _eventBus.Executor.Execute(this);
         }

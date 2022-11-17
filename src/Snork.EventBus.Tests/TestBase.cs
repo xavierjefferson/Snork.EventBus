@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2012-2017 Markus Junginger, greenrobot (http://greenrobot.org)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -25,55 +9,46 @@ namespace Snork.EventBus.Tests
 {
     public abstract class TestBase : LoggingTestBase
     {
-       
-
-
-        /**
-     * Activates long(er) running tests e.g. testing multi-threading more thoroughly.
-     */
-        protected static readonly bool LONG_TESTS = false;
+        /// <summary>
+        ///     Activates long(er) running tests e.g. testing multi-threading more thoroughly.
+        /// </summary>
+        protected const bool LongTests = true;
 
         public string Fail;
 
-        protected volatile object LastMessage;
+        protected volatile object LastEvent;
         protected volatile Thread LastThread;
 
 
-        protected TestBase(ITestOutputHelper output, bool collectMessagesReceived = true) : base(output)
+        protected TestBase(ITestOutputHelper output, bool collectEventsReceived = true) : base(output)
         {
-           
-            if (collectMessagesReceived)
-                MessagesReceived = new ConcurrentBag<object>();
+            if (collectEventsReceived)
+                EventsReceived = new ConcurrentBag<object>();
             else
-                MessagesReceived = null;
-            setUpBase();
+                EventsReceived = null;
         }
 
-        protected ConcurrentBag<object> MessagesReceived { get; }
+        protected ConcurrentBag<object> EventsReceived { get; }
 
-        protected int MessageCount => MessagesReceived?.Count ?? 0;
+        protected int EventCount => EventsReceived?.Count ?? 0;
 
-        public EventBus EventBus { get; set; }
+
         public Exception LastException { get; set; }
         public int LastPriority { get; set; } = int.MinValue;
 
 
-        public void setUpBase()
+        protected override void Setup()
         {
-            EventBus.ClearCaches();
-            GetInitialEventBus();
-        }
-
-        public virtual void GetInitialEventBus()
-        {
+           
             EventBus = new EventBusBuilder().WithLogger(Logger).Build();
         }
 
-        protected void WaitForMessageCount(int expectedCount, int maxMillis)
+
+        protected void WaitForEventCount(int expectedCount, int maxMillis)
         {
             for (var i = 0; i < maxMillis; i++)
             {
-                var currentCount = MessageCount;
+                var currentCount = EventCount;
                 if (currentCount == expectedCount)
                     break;
                 Assert.False(currentCount > expectedCount,
@@ -89,19 +64,19 @@ namespace Snork.EventBus.Tests
                 }
             }
 
-            Assert.Equal(expectedCount, MessageCount);
+            Assert.Equal(expectedCount, EventCount);
         }
 
-        public void TrackMessage(object message)
+        public void TrackEvent(object @event)
         {
-            LastMessage = message;
+            LastEvent = @event;
             LastThread = Thread.CurrentThread;
-            MessagesReceived?.Add(message);
+            EventsReceived?.Add(@event);
         }
 
-        protected void AssertMessageCount(int expectedMessageCount)
+        protected void AssertEventCount(int expectedEventCount)
         {
-            Assert.Equal(expectedMessageCount, MessageCount);
+            Assert.Equal(expectedEventCount, EventCount);
         }
 
         protected void CountDownAndAwaitLatch(CountdownEvent latch, long seconds)

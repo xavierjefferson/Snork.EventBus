@@ -29,27 +29,27 @@ namespace Snork.EventBus.Meta
         }
 
 
-        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType)
+        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type eventType)
         {
-            return CreateSubscriberMethod(methodName, messageType, ThreadModeEnum.Posting, 0, false, 0);
+            return CreateSubscriberMethod(methodName, eventType, ThreadModeEnum.Posting, 0, false, 0);
         }
 
-        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType, ThreadModeEnum threadMode)
+        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type eventType, ThreadModeEnum threadMode)
         {
-            return CreateSubscriberMethod(methodName, messageType, threadMode, 0, false, 0);
+            return CreateSubscriberMethod(methodName, eventType, threadMode, 0, false, 0);
         }
 
-        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type messageType,
+        protected SubscriberMethod CreateSubscriberMethod(string methodName, Type eventType,
             ThreadModeEnum threadMode,
             int priority, bool sticky, int generation)
         {
             try
             {
-                var method = SubscriberType.GetMethod(methodName, new[] { messageType });
+                var method = SubscriberType.GetMethod(methodName, new[] { eventType });
                 if (method == null)
                     throw new EventBusException("Could not find subscriber method in " + SubscriberType +
                                                 ". Maybe a missing ProGuard rule?");
-                return new SubscriberMethod(method, messageType, threadMode, priority, sticky, generation);
+                return new SubscriberMethod(method, eventType, threadMode, priority, sticky, generation);
             }
             catch (Exception e)
             {

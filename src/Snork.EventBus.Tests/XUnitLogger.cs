@@ -12,7 +12,13 @@ namespace Snork.EventBus.Tests
         {
             _output = output;
         }
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+
+        public void Dispose()
+        {
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
+            Func<TState, Exception, string> formatter)
         {
             _output.WriteLine(state.ToString());
         }
@@ -25,10 +31,6 @@ namespace Snork.EventBus.Tests
         public IDisposable BeginScope<TState>(TState state)
         {
             return this;
-        }
-
-        public void Dispose()
-        {
         }
     }
 }

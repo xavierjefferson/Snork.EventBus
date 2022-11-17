@@ -1,49 +1,50 @@
 using System.Threading;
-using Snork.EventBus.Tests.Messages;
+using Snork.EventBus.Tests.Events;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    /**
- * @author Markus Junginger, greenrobot
- */
-    public class StickyMessageTest : TestBase
+    public class StickyEventTest : TestBase
     {
+        public StickyEventTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
         [Fact]
         public void TestPostSticky()
         {
             EventBus.PostSticky("Sticky");
             EventBus.Register(this);
-            Assert.Equal("Sticky", LastMessage);
+            Assert.Equal("Sticky", LastEvent);
             Assert.Equal(Thread.CurrentThread, LastThread);
         }
 
         [Fact]
-        public void TestPostStickyTwoMessages()
+        public void TestPostStickyTwoEvents()
         {
             EventBus.PostSticky("Sticky");
-            EventBus.PostSticky(new IntTestMessage(7));
+            EventBus.PostSticky(new IntTestEvent(7));
             EventBus.Register(this);
-            Assert.Equal(2, MessageCount);
+            Assert.Equal(2, EventCount);
         }
 
         [Fact]
         public void TestPostStickyTwoSubscribers()
         {
             EventBus.PostSticky("Sticky");
-            EventBus.PostSticky(new IntTestMessage(7));
+            EventBus.PostSticky(new IntTestEvent(7));
             EventBus.Register(this);
             var subscriber2 = new StickyIntTestSubscriber(this);
             EventBus.Register(subscriber2);
-            Assert.Equal(3, MessageCount);
+            Assert.Equal(3, EventCount);
 
             EventBus.PostSticky("Sticky");
-            Assert.Equal(4, MessageCount);
+            Assert.Equal(4, EventCount);
 
-            EventBus.PostSticky(new IntTestMessage(8));
-            Assert.Equal(6, MessageCount);
+            EventBus.PostSticky(new IntTestEvent(8));
+            Assert.Equal(6, EventCount);
         }
 
         [Fact]
@@ -51,8 +52,8 @@ namespace Snork.EventBus.Tests
         {
             EventBus.PostSticky("Sticky");
             EventBus.Register(new NonStickySubscriber(this));
-            Assert.Null(LastMessage);
-            Assert.Equal(0, MessageCount);
+            Assert.Null(LastEvent);
+            Assert.Equal(0, EventCount);
         }
 
         [Fact]
@@ -60,8 +61,8 @@ namespace Snork.EventBus.Tests
         {
             EventBus.Post("NonSticky");
             EventBus.Register(this);
-            Assert.Null(LastMessage);
-            Assert.Equal(0, MessageCount);
+            Assert.Null(LastEvent);
+            Assert.Equal(0, EventCount);
         }
 
         [Fact]
@@ -70,7 +71,7 @@ namespace Snork.EventBus.Tests
             EventBus.PostSticky("Sticky");
             EventBus.PostSticky("NewSticky");
             EventBus.Register(this);
-            Assert.Equal("NewSticky", LastMessage);
+            Assert.Equal("NewSticky", LastEvent);
         }
 
         [Fact]
@@ -79,7 +80,7 @@ namespace Snork.EventBus.Tests
             EventBus.PostSticky("Sticky");
             EventBus.Post("NonSticky");
             EventBus.Register(this);
-            Assert.Equal("Sticky", LastMessage);
+            Assert.Equal("Sticky", LastEvent);
         }
 
         [Fact]
@@ -87,90 +88,86 @@ namespace Snork.EventBus.Tests
         {
             EventBus.Register(this);
             EventBus.PostSticky("Sticky");
-            Assert.Equal("Sticky", LastMessage);
+            Assert.Equal("Sticky", LastEvent);
 
             EventBus.Unregister(this);
             EventBus.Register(this);
-            Assert.Equal("Sticky", LastMessage);
-            Assert.Equal(2, MessageCount);
+            Assert.Equal("Sticky", LastEvent);
+            Assert.Equal(2, EventCount);
 
             EventBus.PostSticky("NewSticky");
-            Assert.Equal(3, MessageCount);
-            Assert.Equal("NewSticky", LastMessage);
+            Assert.Equal(3, EventCount);
+            Assert.Equal("NewSticky", LastEvent);
 
             EventBus.Unregister(this);
             EventBus.Register(this);
-            Assert.Equal(4, MessageCount);
-            Assert.Equal("NewSticky", LastMessage);
+            Assert.Equal(4, EventCount);
+            Assert.Equal("NewSticky", LastEvent);
         }
 
         [Fact]
         public void TestPostStickyAndGet()
         {
             EventBus.PostSticky("Sticky");
-            Assert.Equal("Sticky", EventBus.GetStickyMessage(typeof(string)));
+            Assert.Equal("Sticky", EventBus.GetStickyEvent(typeof(string)));
         }
 
         [Fact]
         public void TestPostStickyRemoveClass()
         {
             EventBus.PostSticky("Sticky");
-            EventBus.RemoveStickyMessage(typeof(string));
-            Assert.Null(EventBus.GetStickyMessage(typeof(string)));
+            EventBus.RemoveStickyEvent(typeof(string));
+            Assert.Null(EventBus.GetStickyEvent(typeof(string)));
             EventBus.Register(this);
-            Assert.Null(LastMessage);
-            Assert.Equal(0, MessageCount);
+            Assert.Null(LastEvent);
+            Assert.Equal(0, EventCount);
         }
 
         [Fact]
-        public void TestPostStickyRemoveMessage()
+        public void TestPostStickyRemoveEvent()
         {
             EventBus.PostSticky("Sticky");
-            Assert.True(EventBus.RemoveStickyMessage("Sticky"));
-            Assert.Null(EventBus.GetStickyMessage(typeof(string)));
+            Assert.True(EventBus.RemoveStickyEvent("Sticky"));
+            Assert.Null(EventBus.GetStickyEvent(typeof(string)));
             EventBus.Register(this);
-            Assert.Null(LastMessage);
-            Assert.Equal(0, MessageCount);
+            Assert.Null(LastEvent);
+            Assert.Equal(0, EventCount);
         }
 
         [Fact]
         public void TestPostStickyRemoveAll()
         {
             EventBus.PostSticky("Sticky");
-            EventBus.PostSticky(new IntTestMessage(77));
-            EventBus.RemoveAllStickyMessages();
-            Assert.Null(EventBus.GetStickyMessage(typeof(string)));
-            Assert.Null(EventBus.GetStickyMessage(typeof(IntTestMessage)));
+            EventBus.PostSticky(new IntTestEvent(77));
+            EventBus.RemoveAllStickyEvents();
+            Assert.Null(EventBus.GetStickyEvent(typeof(string)));
+            Assert.Null(EventBus.GetStickyEvent(typeof(IntTestEvent)));
             EventBus.Register(this);
-            Assert.Null(LastMessage);
-            Assert.Equal(0, MessageCount);
+            Assert.Null(LastEvent);
+            Assert.Equal(0, EventCount);
         }
 
         [Fact]
-        public void TestRemoveStickyMessageInSubscriber()
+        public void TestRemoveStickyEventInSubscriber()
         {
             EventBus.Register(new RemoveStickySubscriber(this));
             EventBus.PostSticky("Sticky");
             EventBus.Register(this);
-            Assert.Null(LastMessage);
-            Assert.Equal(0, MessageCount);
-            Assert.Null(EventBus.GetStickyMessage(typeof(string)));
+            Assert.Null(LastEvent);
+            Assert.Equal(0, EventCount);
+            Assert.Null(EventBus.GetStickyEvent(typeof(string)));
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
-            TrackMessage(message);
+            TrackEvent(@event);
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(IntTestMessage message)
+        public virtual void OnEvent(IntTestEvent @event)
         {
-            TrackMessage(message);
-        }
-
-        public StickyMessageTest(ITestOutputHelper output) : base(output)
-        {
+            TrackEvent(@event);
         }
     }
 }

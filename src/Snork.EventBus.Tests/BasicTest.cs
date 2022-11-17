@@ -9,31 +9,35 @@ namespace Snork.EventBus.Tests
 {
     public class BasicTest : TestBase
     {
-        public int CountIntMessage { get; private set; }
-        public int CountMyMessage { get; private set; }
-        public int CountMyMessage2 { get; private set; }
-        public int CountMyMessageExtended { get; private set; }
-        public int CountStringMessage { get; private set; }
-        public int LastIntMessage { get; private set; }
+        public BasicTest(ITestOutputHelper output) : base(output)
+        {
+        }
 
-        public string LastStringMessage { get; private set; }
+        public int CountIntEvent { get; private set; }
+        public int CountMyEvent { get; private set; }
+        public int CountMyEvent2 { get; private set; }
+        public int CountMyEventExtended { get; private set; }
+        public int CountStringEvent { get; private set; }
+        public int LastIntEvent { get; private set; }
+
+        public string LastStringEvent { get; private set; }
 
         [Fact]
         public void TestRegisterAndPost()
         {
             // Use an activity to test real life performance
-            var stringMessageSubscriber = new StringMessageSubscriber();
-            var message = "Hello";
+            var stringEventSubscriber = new StringEventSubscriber();
+            var @event = "Hello";
 
             var stopwatch = Stopwatch.StartNew();
 
-            EventBus.Register(stringMessageSubscriber);
+            EventBus.Register(stringEventSubscriber);
 
             Log($"Registered in {stopwatch.Elapsed}");
 
-            EventBus.Post(message);
+            EventBus.Post(@event);
 
-            Assert.Equal(message, stringMessageSubscriber.LastStringMessage);
+            Assert.Equal(@event, stringEventSubscriber.LastStringEvent);
         }
 
 
@@ -91,35 +95,35 @@ namespace Snork.EventBus.Tests
             var test2 = new BasicTest(Output);
             EventBus.Register(this);
             EventBus.Register(test2);
-            var message = "Hello";
-            EventBus.Post(message);
-            Assert.Equal(message, LastStringMessage);
-            Assert.Equal(message, test2.LastStringMessage);
+            var @event = "Hello";
+            EventBus.Post(@event);
+            Assert.Equal(@event, LastStringEvent);
+            Assert.Equal(@event, test2.LastStringEvent);
         }
 
         [Fact]
         public void TestPostMultipleTimes()
         {
             EventBus.Register(this);
-            var message = new MyBasicMessage();
+            var @event = new MyBasicEvent();
             var count = 1000;
             var stopwatch = Stopwatch.StartNew();
             var start = DateTime.Now.Ticks;
             // Debug.startMethodTracing("testPostMultipleTimes" + count);
-            for (var i = 0; i < count; i++) EventBus.Post(message);
+            for (var i = 0; i < count; i++) EventBus.Post(@event);
 
             Log($"Posted {count} events in {stopwatch.Elapsed}");
-            Assert.Equal(count, CountMyMessage);
+            Assert.Equal(count, CountMyEvent);
         }
 
         [Fact]
-        public void TestMultipleSubscribeMethodsForMessage()
+        public void TestMultipleSubscribeMethodsForEvent()
         {
             EventBus.Register(this);
-            var message = new MyBasicMessage();
-            EventBus.Post(message);
-            Assert.Equal(1, CountMyMessage);
-            Assert.Equal(1, CountMyMessage2);
+            var @event = new MyBasicEvent();
+            EventBus.Post(@event);
+            Assert.Equal(1, CountMyEvent);
+            Assert.Equal(1, CountMyEvent2);
         }
 
         [Fact]
@@ -128,7 +132,7 @@ namespace Snork.EventBus.Tests
             EventBus.Register(this);
             EventBus.Unregister(this);
             EventBus.Post("Hello");
-            Assert.Null(LastStringMessage);
+            Assert.Null(LastStringEvent);
         }
 
         [Fact]
@@ -137,10 +141,10 @@ namespace Snork.EventBus.Tests
             EventBus.Register(this);
             EventBus.Post(42);
             EventBus.Post("Hello");
-            Assert.Equal(1, CountIntMessage);
-            Assert.Equal(1, CountStringMessage);
-            Assert.Equal(42, LastIntMessage);
-            Assert.Equal("Hello", LastStringMessage);
+            Assert.Equal(1, CountIntEvent);
+            Assert.Equal(1, CountStringEvent);
+            Assert.Equal(42, LastIntEvent);
+            Assert.Equal("Hello", LastStringEvent);
         }
 
         [Fact]
@@ -150,9 +154,9 @@ namespace Snork.EventBus.Tests
             EventBus.Unregister(this);
             EventBus.Post(42);
             EventBus.Post("Hello");
-            Assert.Equal(0, CountIntMessage);
-            Assert.Equal(0, LastIntMessage);
-            Assert.Equal(0, CountStringMessage);
+            Assert.Equal(0, CountIntEvent);
+            Assert.Equal(0, LastIntEvent);
+            Assert.Equal(0, CountStringEvent);
         }
 
         [Fact]
@@ -160,108 +164,104 @@ namespace Snork.EventBus.Tests
         {
             EventBus.Register(this);
             new EventBusBuilder().WithLogger(Logger).Build().Post("Hello");
-            Assert.Equal(0, CountStringMessage);
+            Assert.Equal(0, CountStringEvent);
         }
 
         [Fact]
-        public void TestPostInMessageHandler()
+        public void TestPostInEventHandler()
         {
             var reposter = new RepostInteger(EventBus);
             EventBus.Register(reposter);
             EventBus.Register(this);
             EventBus.Post(1);
-            Assert.Equal(10, CountIntMessage);
-            Assert.Equal(10, LastIntMessage);
-            Assert.Equal(10, reposter.CountMessage);
-            Assert.Equal(10, reposter.LastMessage);
+            Assert.Equal(10, CountIntEvent);
+            Assert.Equal(10, LastIntEvent);
+            Assert.Equal(10, reposter.CountEvent);
+            Assert.Equal(10, reposter.LastEvent);
         }
 
         [Fact]
-        public void TestHasSubscriberForMessage()
+        public void TestHasSubscriberForEvent()
         {
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(string)));
 
             EventBus.Register(this);
-            Assert.True(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.True(EventBus.HasSubscriberForEvent(typeof(string)));
 
             EventBus.Unregister(this);
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(string)));
         }
 
         [Fact]
-        public void TestHasSubscriberForMessageSuperclass()
+        public void TestHasSubscriberForEventSuperclass()
         {
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(string)));
 
             object subscriber = new ObjectSubscriber();
             EventBus.Register(subscriber);
-            Assert.True(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.True(EventBus.HasSubscriberForEvent(typeof(string)));
 
             EventBus.Unregister(subscriber);
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(string)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(string)));
         }
 
         [Fact]
-        public void TestHasSubscriberForMessageImplementedInterface()
+        public void TestHasSubscriberForEventImplementedInterface()
         {
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(List<object>)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(List<object>)));
 
             object subscriber = new IEnumerableSubscriber();
             EventBus.Register(subscriber);
-            Assert.True(EventBus.HasSubscriberForMessage(typeof(List<object>)));
-            Assert.True(EventBus.HasSubscriberForMessage(typeof(IEnumerable<object>)));
+            Assert.True(EventBus.HasSubscriberForEvent(typeof(List<object>)));
+            Assert.True(EventBus.HasSubscriberForEvent(typeof(IEnumerable<object>)));
 
             EventBus.Unregister(subscriber);
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(List<object>)));
-            Assert.False(EventBus.HasSubscriberForMessage(typeof(IEnumerable<object>)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(List<object>)));
+            Assert.False(EventBus.HasSubscriberForEvent(typeof(IEnumerable<object>)));
         }
 
         [Subscribe]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
-            LastStringMessage = message;
-            CountStringMessage++;
+            LastStringEvent = @event;
+            CountStringEvent++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(int message)
+        public virtual void OnEvent(int @event)
         {
-            LastIntMessage = message;
-            CountIntMessage++;
+            LastIntEvent = @event;
+            CountIntEvent++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(MyBasicMessage message)
+        public virtual void OnEvent(MyBasicEvent @event)
         {
-            CountMyMessage++;
+            CountMyEvent++;
         }
 
         [Subscribe]
-        public virtual void OnMessage2(MyBasicMessage message)
+        public virtual void OnEvent2(MyBasicEvent @event)
         {
-            CountMyMessage2++;
+            CountMyEvent2++;
         }
 
         [Subscribe]
-        public virtual void OnMessage(MyBasicMessageExtended message)
+        public virtual void OnEvent(MyBasicEventExtended @event)
         {
-            CountMyMessageExtended++;
+            CountMyEventExtended++;
         }
 
         public class WithIndex : BasicTest
         {
+            public WithIndex(ITestOutputHelper output) : base(output)
+            {
+            }
+
             [Fact]
             public void Dummy()
             {
             }
-
-            public WithIndex(ITestOutputHelper output) : base(output)
-            {
-            }
-        }
-
-        public BasicTest(ITestOutputHelper output ) : base(output )
-        {
         }
     }
 }

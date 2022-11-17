@@ -1,19 +1,21 @@
 using System;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Snork.EventBus.Interfaces;
 
 namespace Snork.EventBus
 {
     /// <summary>
-    ///     Posts messages in background.
+    ///     Posts events in background.
     /// </summary>
     internal sealed class BackgroundPoster : IRunnable, IPoster
     {
+        private static readonly TimeSpan PollDuration = TimeSpan.FromSeconds(1);
         private readonly EventBus _eventBus;
 
-        private readonly PendingPostQueue _queue;
-
         private readonly object _mutex = new object();
+
+        private readonly PendingPostQueue _queue;
 
         public BackgroundPoster(EventBus eventBus)
         {
@@ -21,22 +23,20 @@ namespace Snork.EventBus
             _queue = new PendingPostQueue();
         }
 
-        public void Enqueue(Subscription subscription, object message)
+        public void Enqueue(Subscription subscription, object @event)
         {
-            var pendingPost = PendingPost.ObtainPendingPost(subscription, message);
-            lock (this)
-            {
-                _queue.Enqueue(pendingPost);
-                if (Monitor.TryEnter(_mutex))
-                    try
-                    {
-                        _eventBus.Executor.Execute(this);
-                    }
-                    finally
-                    {
-                        Monitor.Exit(_mutex);
-                    }
-            }
+            var pendingPost = PendingPost.ObtainPendingPost(subscription, @event);
+
+            _queue.Enqueue(pendingPost);
+            if (Monitor.TryEnter(_mutex))
+                try
+                {
+                    _eventBus.Executor.Execute(this);
+                }
+                finally
+                {
+                    Monitor.Exit(_mutex);
+                }
         }
 
         public void Run()
@@ -47,7 +47,7 @@ namespace Snork.EventBus
                 while (true)
                     try
                     {
-                        var pendingPost = _queue.Poll(1000);
+                        var pendingPost = _queue.Poll(PollDuration);
                         if (pendingPost == null) return;
 
                         var result = _eventBus.InvokeSubscriber(pendingPost);
@@ -61,7 +61,6 @@ namespace Snork.EventBus
             {
                 Monitor.Exit(_mutex);
             }
-
         }
     }
 }

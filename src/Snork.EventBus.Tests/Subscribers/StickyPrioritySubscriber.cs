@@ -1,78 +1,78 @@
-using Snork.EventBus.Tests.Messages;
+using Snork.EventBus.Tests.Events;
 
 namespace Snork.EventBus.Tests.Subscribers
 {
-    public class StickyPrioritySubscriber : MessageOrderedPriorityTestSubscriberBase
+    public class StickyPrioritySubscriber : EventOrderedPriorityTestSubscriberBase
     {
         public StickyPrioritySubscriber(OrderedSubscriptionsTest outerTest) : base(outerTest)
         {
         }
 
         [Subscribe(priority: 1, sticky: true)]
-        public virtual void OnMessageP1(string message)
+        public virtual void OnEventP1(string @event)
         {
-            HandleMessage(1, message);
+            HandleEvent(1, @event);
         }
 
 
         [Subscribe(priority: -1, sticky: true)]
-        public virtual void OnMessageM1(string message)
+        public virtual void OnEventM1(string @event)
         {
-            HandleMessage(-1, message);
+            HandleEvent(-1, @event);
         }
 
         [Subscribe(priority: 0, sticky: true)]
-        public virtual void OnMessageP0(string message)
+        public virtual void OnEventP0(string @event)
         {
-            HandleMessage(0, message);
+            HandleEvent(0, @event);
         }
 
         [Subscribe(priority: 10, sticky: true)]
-        public virtual void OnMessageP10(string message)
+        public virtual void OnEventP10(string @event)
         {
-            HandleMessage(10, message);
+            HandleEvent(10, @event);
         }
 
         [Subscribe(priority: -100, sticky: true)]
-        public virtual void OnMessageM100(string message)
+        public virtual void OnEventM100(string @event)
         {
-            HandleMessage(-100, message);
+            HandleEvent(-100, @event);
         }
 
         [Subscribe(ThreadModeEnum.Main, priority: -1, sticky: true)]
-        public virtual void OnMessageMainThreadM1(IntTestMessage message)
+        public virtual void OnEventMainThreadM1(IntTestEvent @event)
         {
-            HandleMessage(-1, message);
+            HandleEvent(-1, @event);
         }
 
         [Subscribe(ThreadModeEnum.Main, true)]
-        public virtual void OnMessageMainThreadP0(IntTestMessage message)
+        public virtual void OnEventMainThreadP0(IntTestEvent @event)
         {
-            HandleMessage(SubscribeAttribute.DefaultPriority, message);
+            HandleEvent(SubscribeAttribute.DefaultPriority, @event);
         }
 
         [Subscribe(ThreadModeEnum.Main, priority: 1, sticky: true)]
-        public virtual void OnMessageMainThreadP1(IntTestMessage message)
+        public virtual void OnEventMainThreadP1(IntTestEvent @event)
         {
-            HandleMessage(1, message);
+            HandleEvent(1, @event);
         }
 
         [Subscribe(ThreadModeEnum.Background, priority: 1, sticky: true)]
-        public virtual void OnMessageBackgroundThreadP1(int message)
+        public virtual void OnEventBackgroundThreadP1(int @event)
         {
-            HandleMessage(1, message);
+            HandleEvent(1, @event);
         }
 
         [Subscribe(ThreadModeEnum.Background, true)]
-        public virtual void OnMessageBackgroundThreadP0(int message)
+        public virtual void OnEventBackgroundThreadP0(int @event)
         {
-            HandleMessage(SubscribeAttribute.DefaultPriority, message);
+            HandleEvent(SubscribeAttribute.DefaultPriority, @event);
         }
 
         [Subscribe(ThreadModeEnum.Background, priority: -1, sticky: true)]
-        public virtual void OnMessageBackgroundThreadM1(int message)
+        public virtual void OnEventBackgroundThreadM1(int @event)
         {
-            HandleMessage(-1, message);
+            HandleEvent(-1, @event);
         }
     }
 }

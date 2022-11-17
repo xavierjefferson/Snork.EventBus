@@ -1,82 +1,62 @@
-/*
- * Copyright (C) 2012-2016 Markus Junginger, greenrobot (http://greenrobot.org)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-using Snork.EventBus.Tests.Messages;
+using Snork.EventBus.Tests.Events;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    /**
- * @author Markus Junginger, greenrobot
- */
     public class InheritanceTest : InheritanceTestBase
     {
         public InheritanceTest(ITestOutputHelper output) : base(output)
         {
-            setUp();
         }
 
-        public void setUp()
+        protected override void Setup()
         {
             EventBus = new EventBusBuilder().WithLogger(Logger).Build();
         }
 
         [Fact]
-        public virtual void TestMessageClassHierarchy()
+        public virtual void TestEventClassHierarchy()
         {
             EventBus.Register(this);
 
             EventBus.Post("Hello");
-            Assert.Equal(1, CountObjectMessage);
+            Assert.Equal(1, CountObjectEvent);
 
-            EventBus.Post(new MyInheritanceMessage());
-            Assert.Equal(2, CountObjectMessage);
-            Assert.Equal(1, CountMyMessage);
+            EventBus.Post(new MyInheritanceEvent());
+            Assert.Equal(2, CountObjectEvent);
+            Assert.Equal(1, CountMyEvent);
 
-            EventBus.Post(new MyInheritanceMessageExtended());
-            Assert.Equal(3, CountObjectMessage);
-            Assert.Equal(2, CountMyMessage);
-            Assert.Equal(1, CountMyMessageExtended);
+            EventBus.Post(new MyInheritanceEventExtended());
+            Assert.Equal(3, CountObjectEvent);
+            Assert.Equal(2, CountMyEvent);
+            Assert.Equal(1, CountMyEventExtended);
         }
 
         [Fact]
-        public void TestMessageClassHierarchySticky()
+        public void TestEventClassHierarchySticky()
         {
             EventBus.PostSticky("Hello");
-            EventBus.PostSticky(new MyInheritanceMessage());
-            EventBus.PostSticky(new MyInheritanceMessageExtended());
+            EventBus.PostSticky(new MyInheritanceEvent());
+            EventBus.PostSticky(new MyInheritanceEventExtended());
             EventBus.Register(new StickySubscriber(this));
-            Assert.Equal(1, CountMyMessageExtended);
-            Assert.Equal(2, CountMyMessage);
-            Assert.Equal(3, CountObjectMessage);
+            Assert.Equal(1, CountMyEventExtended);
+            Assert.Equal(2, CountMyEvent);
+            Assert.Equal(3, CountObjectEvent);
         }
 
         [Fact]
-        public void TestMessageInterfaceHierarchy()
+        public void TestEventInterfaceHierarchy()
         {
             EventBus.Register(this);
 
-            EventBus.Post(new MyInheritanceMessage());
-            Assert.Equal(1, CountMyMessageInterface);
+            EventBus.Post(new MyInheritanceEvent());
+            Assert.Equal(1, CountMyEventInterface);
 
-            EventBus.Post(new MyInheritanceMessageExtended());
-            Assert.Equal(2, CountMyMessageInterface);
-            Assert.Equal(1, CountMyMessageInterfaceExtended);
+            EventBus.Post(new MyInheritanceEventExtended());
+            Assert.Equal(2, CountMyEventInterface);
+            Assert.Equal(1, CountMyEventInterfaceExtended);
         }
 
 
@@ -87,18 +67,18 @@ namespace Snork.EventBus.Tests
             EventBus.Register(subscriber);
 
             EventBus.Post("Hello");
-            Assert.Equal(1, subscriber.CountObjectMessage);
+            Assert.Equal(1, subscriber.CountObjectEvent);
 
-            EventBus.Post(new MyInheritanceMessage());
-            Assert.Equal(2, subscriber.CountObjectMessage);
-            Assert.Equal(0, subscriber.CountMyMessage);
-            Assert.Equal(1, subscriber.CountMyMessageOverwritten);
+            EventBus.Post(new MyInheritanceEvent());
+            Assert.Equal(2, subscriber.CountObjectEvent);
+            Assert.Equal(0, subscriber.CountMyEvent);
+            Assert.Equal(1, subscriber.CountMyEventOverwritten);
 
-            EventBus.Post(new MyInheritanceMessageExtended());
-            Assert.Equal(3, subscriber.CountObjectMessage);
-            Assert.Equal(0, subscriber.CountMyMessage);
-            Assert.Equal(1, subscriber.CountMyMessageExtended);
-            Assert.Equal(2, subscriber.CountMyMessageOverwritten);
+            EventBus.Post(new MyInheritanceEventExtended());
+            Assert.Equal(3, subscriber.CountObjectEvent);
+            Assert.Equal(0, subscriber.CountMyEvent);
+            Assert.Equal(1, subscriber.CountMyEventExtended);
+            Assert.Equal(2, subscriber.CountMyEventOverwritten);
         }
 
         [Fact]
@@ -109,18 +89,16 @@ namespace Snork.EventBus.Tests
             EventBus.Register(subscriber);
 
             EventBus.Post("Hello");
-            Assert.Equal(1, subscriber.CountObjectMessage);
+            Assert.Equal(1, subscriber.CountObjectEvent);
 
-            EventBus.Post(new MyInheritanceMessage());
-            Assert.Equal(2, subscriber.CountObjectMessage);
-            Assert.Equal(1, subscriber.CountMyMessage);
+            EventBus.Post(new MyInheritanceEvent());
+            Assert.Equal(2, subscriber.CountObjectEvent);
+            Assert.Equal(1, subscriber.CountMyEvent);
 
-            EventBus.Post(new MyInheritanceMessageExtended());
-            Assert.Equal(3, subscriber.CountObjectMessage);
-            Assert.Equal(2, subscriber.CountMyMessage);
-            Assert.Equal(1, subscriber.CountMyMessageExtended);
+            EventBus.Post(new MyInheritanceEventExtended());
+            Assert.Equal(3, subscriber.CountObjectEvent);
+            Assert.Equal(2, subscriber.CountMyEvent);
+            Assert.Equal(1, subscriber.CountMyEventExtended);
         }
-
-
     }
 }

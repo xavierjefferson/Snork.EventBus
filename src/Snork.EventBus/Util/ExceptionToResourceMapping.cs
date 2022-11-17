@@ -6,11 +6,10 @@ namespace Snork.EventBus.Util
 {
     /// <summary>
     ///     Maps exceptions to texts for error dialogs. Use Config to configure the mapping.
-    ///     @author Markus
     /// </summary>
     public class ExceptionToResourceMapping
     {
-        public Dictionary<Type, int> ExceptionToMessageIdMap { get; } = new Dictionary<Type, int>();
+        public Dictionary<Type, int> ExceptionToEventIdMap { get; } = new Dictionary<Type, int>();
 
         /// <summary>
         ///     Looks at the exception and its causes trying to find an ID.
@@ -30,28 +29,27 @@ namespace Snork.EventBus.Util
                 if (depthToGo <= 0 || exceptionToCheck == exception || exceptionToCheck == null)
                 {
                     //var logger = Logger.Default.get(); // No EventBus instance here
-                    //logger.LogDebug( "No specific message resource ID found for " + exception);
-                    // return config.defaultErrorMsgId;
+                    //logger.LogDebug( "No specific event resource ID found for " + exception);
                     return null;
                 }
             }
         }
 
         /// <summary>
-        ///     Mapping without checking the cause (done in mapThrowable).
+        ///     Mapping without checking the cause (done in <see cref="MapException"/>).
         /// </summary>
         protected int? MapExceptionFlat(Exception exception)
         {
             var exceptionType = exception.GetType();
             int? resId = null;
-            if (ExceptionToMessageIdMap.ContainsKey(exceptionType)) return ExceptionToMessageIdMap[exceptionType];
+            if (ExceptionToEventIdMap.ContainsKey(exceptionType)) return ExceptionToEventIdMap[exceptionType];
 
             Type? closestType = null;
-            foreach (var map in ExceptionToMessageIdMap)
+            foreach (var map in ExceptionToEventIdMap)
             {
                 var candidate = map.Key;
-                if (candidate.IsAssignableFromExt(exceptionType))
-                    if (closestType == null || closestType.IsAssignableFromExt(candidate))
+                if (candidate.IsAssignableFrom(exceptionType))
+                    if (closestType == null || closestType.IsAssignableFrom(candidate))
                     {
                         closestType = candidate;
                         resId = map.Value;
@@ -63,7 +61,7 @@ namespace Snork.EventBus.Util
 
         public ExceptionToResourceMapping AddMapping(Type type, int msgId)
         {
-            ExceptionToMessageIdMap[type] = msgId;
+            ExceptionToEventIdMap[type] = msgId;
             return this;
         }
     }

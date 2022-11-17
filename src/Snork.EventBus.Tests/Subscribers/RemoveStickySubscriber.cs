@@ -7,9 +7,9 @@ namespace Snork.EventBus.Tests.Subscribers
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
-            OuterTest.EventBus.RemoveStickyMessage(message);
+            OuterTest.EventBus.RemoveStickyEvent(@event);
         }
     }
 }

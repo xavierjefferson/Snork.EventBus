@@ -23,7 +23,7 @@ namespace Snork.EventBus.Meta
         {
             var methods = new List<SubscriberMethod>();
             foreach (var info in _methodInfos)
-                methods.Add(CreateSubscriberMethod(info.MethodName, info.MessageType, info.ThreadMode,
+                methods.Add(CreateSubscriberMethod(info.MethodName, info.EventType, info.ThreadMode,
                     info.Priority, info.Sticky, generation));
 
             return methods;

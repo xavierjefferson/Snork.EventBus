@@ -1,4 +1,4 @@
-using Snork.EventBus.Tests.Messages;
+using Snork.EventBus.Tests.Events;
 
 namespace Snork.EventBus.Tests.Subscribers
 {
@@ -12,33 +12,33 @@ namespace Snork.EventBus.Tests.Subscribers
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(object message)
+        public virtual void OnEvent(object @event)
         {
-            _outer.CountObjectMessage++;
+            _outer.CountObjectEvent++;
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(MyInheritanceMessage message)
+        public virtual void OnEvent(MyInheritanceEvent @event)
         {
-            _outer.CountMyMessage++;
+            _outer.CountMyEvent++;
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(MyInheritanceMessageExtended message)
+        public virtual void OnEvent(MyInheritanceEventExtended @event)
         {
-            _outer.CountMyMessageExtended++;
+            _outer.CountMyEventExtended++;
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(MyInheritanceMessageInterface message)
+        public virtual void OnEvent(MyInheritanceEventInterface @event)
         {
-            _outer.CountMyMessageInterface++;
+            _outer.CountMyEventInterface++;
         }
 
         [Subscribe(sticky: true)]
-        public virtual void OnMessage(MyInheritanceMessageInterfaceExtended message)
+        public virtual void OnEvent(MyInheritanceEventInterfaceExtended @event)
         {
-            _outer.CountMyMessageInterfaceExtended++;
+            _outer.CountMyEventInterfaceExtended++;
         }
     }
 }

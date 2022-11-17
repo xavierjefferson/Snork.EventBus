@@ -17,7 +17,7 @@ namespace Snork.EventBus
         public SubscriberMethod? SubscriberMethod { get; }
 
         /// <summary>
-        ///     Becomes false as soon as <see cref="EventBus.Unregister"/> is called, which is checked by queued message delivery
+        ///     Becomes false as soon as <see cref="EventBus.Unregister"/> is called, which is checked by queued event delivery
         ///   <see cref="EventBus.InvokeSubscriber(PendingPost)"/>  to prevent race conditions.
         /// </summary>
         public bool Active

@@ -11,22 +11,22 @@ namespace Snork.EventBus.Tests.Subscribers
             _eventBus = eventBus;
         }
 
-        public int CountMessage { get; set; }
-        public int LastMessage { get; set; }
+        public int CountEvent { get; set; }
+        public int LastEvent { get; set; }
 
         [Subscribe]
-        public virtual void OnMessage(int message)
+        public virtual void OnEvent(int @event)
         {
-            LastMessage = message;
-            CountMessage++;
-            Assert.Equal(CountMessage, message);
+            LastEvent = @event;
+            CountEvent++;
+            Assert.Equal(CountEvent, @event);
 
-            if (message < 10)
+            if (@event < 10)
             {
-                var countIntMessageBefore = CountMessage;
-                _eventBus.Post(message + 1);
-                // All our Post calls will just enqueue the @message, so check count is unchanged
-                Assert.Equal(countIntMessageBefore, countIntMessageBefore);
+                var countIntEventBefore = CountEvent;
+                _eventBus.Post(@event + 1);
+                // All our Post calls will just enqueue the event, so check count is unchanged
+                Assert.Equal(countIntEventBefore, countIntEventBefore);
             }
         }
     }

@@ -7,11 +7,11 @@ namespace Snork.EventBus.Tests.Subscribers
         }
 
         [Subscribe]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
             try
             {
-                OuterTest.EventBus.CancelMessageDelivery(this);
+                OuterTest.EventBus.CancelEventDelivery(this);
             }
             catch (EventBusException e)
             {

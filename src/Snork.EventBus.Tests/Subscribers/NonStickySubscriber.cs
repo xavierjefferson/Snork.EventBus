@@ -1,4 +1,4 @@
-using Snork.EventBus.Tests.Messages;
+using Snork.EventBus.Tests.Events;
 
 namespace Snork.EventBus.Tests.Subscribers
 {
@@ -9,15 +9,15 @@ namespace Snork.EventBus.Tests.Subscribers
         }
 
         [Subscribe]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
-            OuterTest.TrackMessage(message);
+            OuterTest.TrackEvent(@event);
         }
 
         [Subscribe]
-        public virtual void OnMessage(IntTestMessage message)
+        public virtual void OnEvent(IntTestEvent @event)
         {
-            OuterTest.TrackMessage(message);
+            OuterTest.TrackEvent(@event);
         }
     }
 }

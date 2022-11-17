@@ -1,4 +1,4 @@
-namespace Snork.EventBus
+namespace Snork.EventBus.Interfaces
 {
     /// <summary>
     ///     Interface to the "main" thread, which can be whatever you like. 

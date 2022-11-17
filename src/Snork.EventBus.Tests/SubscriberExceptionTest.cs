@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2012-2016 Markus Junginger, greenrobot (http://greenrobot.org)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 using System;
 using Snork.EventBus.Tests.Subscribers;
 using Xunit;
@@ -21,24 +5,25 @@ using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    /**
- * @author Markus Junginger, greenrobot
- */
     public class SubscriberExceptionTest : TestBase
     {
+        public SubscriberExceptionTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
         [Fact]
-        public void TestSubscriberExceptionMessage()
+        public void TestSubscriberExceptionEvent()
         {
             EventBus = EventBus.Builder().WithLogSubscriberExceptions(false).Build();
             EventBus.Register(this);
             EventBus.Post("Foo");
 
-            AssertMessageCount(1);
-            Assert.Equal(typeof(SubscriberExceptionMessage), LastMessage.GetType());
-            var exMessage = (SubscriberExceptionMessage)LastMessage;
-            Assert.Equal("Foo", exMessage.OriginalMessage);
-            Assert.Same(this, exMessage.OriginalSubscriber);
-            Assert.Equal("Bar", exMessage.Exception.Message);
+            AssertEventCount(1);
+            Assert.Equal(typeof(SubscriberExceptionEvent), LastEvent.GetType());
+            var exEvent = (SubscriberExceptionEvent)LastEvent;
+            Assert.Equal("Foo", exEvent.OriginalEvent);
+            Assert.Same(this, exEvent.OriginalSubscriber);
+            Assert.Equal("Bar", exEvent.Exception.Message);
         }
 
         [Fact]
@@ -48,23 +33,19 @@ namespace Snork.EventBus.Tests
             EventBus.Register(this);
             EventBus.Register(new BadExceptionSubscriber());
             EventBus.Post("Foo");
-            AssertMessageCount(1);
+            AssertEventCount(1);
         }
 
         [Subscribe]
-        public virtual void OnMessage(string message)
+        public virtual void OnEvent(string @event)
         {
             throw new Exception("Bar");
         }
 
         [Subscribe]
-        public virtual void OnMessage(SubscriberExceptionMessage message)
+        public virtual void OnEvent(SubscriberExceptionEvent @event)
         {
-            TrackMessage(message);
-        }
-
-        public SubscriberExceptionTest(ITestOutputHelper output ) : base(output )
-        {
+            TrackEvent(@event);
         }
     }
 }

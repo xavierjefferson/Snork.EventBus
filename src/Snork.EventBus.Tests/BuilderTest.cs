@@ -4,38 +4,41 @@ using Xunit.Abstractions;
 
 namespace Snork.EventBus.Tests
 {
-    /**
- * @author Markus Junginger, greenrobot
- */
     public class BuilderTest : TestBase
     {
+        public BuilderTest(ITestOutputHelper output) : base(output)
+        {
+        }
+
         [Fact]
         public void TestThrowSubscriberException()
         {
             EventBus = EventBus.Builder().WithThrowSubscriberException(true).WithLogger(Logger).Build();
-            EventBus.Register(new SubscriberExceptionMessageTracker(this));
+            EventBus.Register(new SubscriberExceptionEventTracker(this));
             EventBus.Register(new ThrowingSubscriber());
             Assert.Throws<EventBusException>(() => { EventBus.Post("Foo"); });
         }
 
         [Fact]
-        public void TestDoNotSendSubscriberExceptionMessage()
+        public void TestDoNotSendSubscriberExceptionEvent()
         {
-            EventBus = EventBus.Builder().WithLogSubscriberExceptions(false).WithSendSubscriberExceptionMessage(false).WithLogger(Logger)
+            EventBus = EventBus.Builder().WithLogSubscriberExceptions(false).WithSendSubscriberExceptionEvent(false)
+                .WithLogger(Logger)
                 .Build();
-            EventBus.Register(new SubscriberExceptionMessageTracker(this));
+            EventBus.Register(new SubscriberExceptionEventTracker(this));
             EventBus.Register(new ThrowingSubscriber());
             EventBus.Post("Foo");
-            AssertMessageCount(0);
+            AssertEventCount(0);
         }
 
         [Fact]
-        public void TestDoNotSendNoSubscriberMessage()
+        public void TestDoNotSendNoSubscriberEvent()
         {
-            EventBus = EventBus.Builder().WithLogNoSubscriberMessages(false).WithSendNoSubscriberMessage(false).WithLogger(Logger).Build();
-            EventBus.Register(new NoSubscriberMessageTracker(this));
+            EventBus = EventBus.Builder().WithLogNoSubscriberEvents(false).WithSendNoSubscriberEvent(false)
+                .WithLogger(Logger).Build();
+            EventBus.Register(new NoSubscriberEventTracker(this));
             EventBus.Post("Foo");
-            AssertMessageCount(0);
+            AssertEventCount(0);
         }
 
         [Fact]
@@ -44,7 +47,7 @@ namespace Snork.EventBus.Tests
             var builder = EventBus.Builder().WithLogger(Logger);
             Assert.Throws<EventBusException>(() =>
             {
-                // Either this should throw when another unit test got the default message bus...
+                // Either this should throw when another unit test got the default event bus...
                 EventBus = builder.InstallDefaultEventBus();
                 Assert.Equal(EventBus, EventBus.Default);
 
@@ -54,15 +57,11 @@ namespace Snork.EventBus.Tests
         }
 
         [Fact]
-        public void TestMessageInheritance()
+        public void TestEventInheritance()
         {
-            EventBus = EventBus.Builder().WithMessageInheritance(false).WithLogger(Logger).Build();
+            EventBus = EventBus.Builder().WithEventInheritance(false).WithLogger(Logger).Build();
             EventBus.Register(new ThrowingSubscriber());
             EventBus.Post("Foo");
-        }
-
-        public BuilderTest(ITestOutputHelper output ) : base(output)
-        {
         }
     }
 }

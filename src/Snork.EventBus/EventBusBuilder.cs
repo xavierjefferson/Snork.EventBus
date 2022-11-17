@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Snork.EventBus.Interfaces;
 using Snork.EventBus.Meta;
 
 namespace Snork.EventBus
@@ -22,7 +23,7 @@ namespace Snork.EventBus
 
         public bool EventInheritance { get; private set; } = true;
         public bool IgnoreGeneratedIndex { get; private set; }
-        public bool LogNoSubscriberMessages { get; private set; } = true;
+        public bool LogNoSubscriberEvents { get; private set; } = true;
 
         public bool LogSubscriberExceptions { get; private set; } = true;
         public IMainThreadSupport? MainThreadSupport { get; private set; }
@@ -43,16 +44,16 @@ namespace Snork.EventBus
         /// <summary>
         ///     Default: true
         /// </summary>
-        public EventBusBuilder WithLogNoSubscriberMessages(bool logNoSubscriberMessages)
+        public EventBusBuilder WithLogNoSubscriberEvents(bool logNoSubscriberEvents)
         {
-            LogNoSubscriberMessages = logNoSubscriberMessages;
+            LogNoSubscriberEvents = logNoSubscriberEvents;
             return this;
         }
 
         /// <summary>
         ///     Default: true
         /// </summary>
-        public EventBusBuilder WithSendSubscriberExceptionMessage(bool sendSubscriberExceptionEvent)
+        public EventBusBuilder WithSendSubscriberExceptionEvent(bool sendSubscriberExceptionEvent)
         {
             SendSubscriberExceptionEvent = sendSubscriberExceptionEvent;
             return this;
@@ -61,7 +62,7 @@ namespace Snork.EventBus
         /// <summary>
         ///     Default: true
         /// </summary>
-        public EventBusBuilder WithSendNoSubscriberMessage(bool sendNoSubscriberEvent)
+        public EventBusBuilder WithSendNoSubscriberEvent(bool sendNoSubscriberEvent)
         {
             SendNoSubscriberEvent = sendNoSubscriberEvent;
             return this;
@@ -80,15 +81,15 @@ namespace Snork.EventBus
         }
 
         /// <summary>
-        ///     By default, EventBus considers the message class hierarchy (subscribers to super classes will be notified).
-        ///     Switching this feature off will improve posting of messages. For simple message classes extending object directly,
-        ///     we measured a speed up of 20% for message posting. For more complex message hierarchies, the speed up should be
+        ///     By default, EventBus considers the event class hierarchy (subscribers to super classes will be notified).
+        ///     Switching this feature off will improve posting of events. For simple event classes extending object directly,
+        ///     we measured a speed up of 20% for event posting. For more complex event hierarchies, the speed up should be
         ///     greater than 20%.
         ///     <p />
-        ///     However, keep in mind that message posting usually consumes just a small proportion of CPU time inside an app,
-        ///     unless it is posting at high rates, e.g. hundreds/thousands of messages per second.
+        ///     However, keep in mind that event posting usually consumes just a small proportion of CPU time inside an app,
+        ///     unless it is posting at high rates, e.g. hundreds/thousands of events per second.
         /// </summary>
-        public EventBusBuilder WithMessageInheritance(bool eventInheritance)
+        public EventBusBuilder WithEventInheritance(bool eventInheritance)
         {
             EventInheritance = eventInheritance;
             return this;
@@ -96,7 +97,7 @@ namespace Snork.EventBus
 
 
         /// <summary>
-        ///     Provide a custom thread pool to EventBus used for async and background message delivery. This is an advanced
+        ///     Provide a custom thread pool to EventBus used for async and background event delivery. This is an advanced
         ///     setting to that can break things: ensure the given ExecutorService won't get stuck to avoid undefined behavior.
         /// </summary>
         public EventBusBuilder WithExecutor(IExecutor executor)
