@@ -10,7 +10,7 @@ Contents
 <a name=HowTos></a>
 ## How-Tos
 
-[How to get started](HowToGetStarted.md)
+[How To Get Started In Three Steps](HowToGetStarted.md)
 
 [Delivery Threads (ThreadMode)](DeliveryThreadsThreadMode.md)
 

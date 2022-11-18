@@ -44,33 +44,44 @@ Subscribers implement event handling methods (also called “subscriber methods”) 
 
 Subscribers also need to  **register**  themselves to  **and unregister**  from the bus.  Subscribers will receive events only while they are registered.
 
-@Override
 
-public  void  onStart()  {
+    using System;
+    using Snork.EventBus;
 
-super.onStart();
+    namespace ConsoleApp1
+    {
+        internal class Program
+        {
+            public void Run()
+            {
+                EventBus.Default.Register(this);
+                //at this point, event handlers are running and you can post events to them
+                EventBus.Default.Post("Here's a message");
+                Console.WriteLine("Press enter to end program");
+                EventBus.Default.Unregister(this);
+            }
 
-EventBus.getDefault().register(this);
+            static void Main(string[] args)
+            {
+                new Program().Run();
+            }
 
-}
+            [Subscribe()]
+            public void OnReceive(string someMessage)
+            {
+                System.Diagnostics.Debug.Print(someMessage);
+            }
+        }
+    }
 
-@Override
-
-public  void  onStop()  {
-
-EventBus.getDefault().unregister(this);
-
-super.onStop();
-
-}
 <a name=PostEvents></a>
-### Step 3: Post events
+### Step 3: Post Events
 
 Post an event from any part of your code. All currently registered subscribers matching the event type will receive it.
 
     EventBus.Default.Post(new MessageEvent("Hello everyone!"));
 
 <a name=LearnMore></a>
-### Learn more
+### Learn More
 
 Have a look at  [the full documentation](Index.md)  to learn about all features of EventBus.
