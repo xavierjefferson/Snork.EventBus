@@ -1,10 +1,10 @@
 
 #Snork.EventBus
 ========
-Snork.EventBus is a publish/subscribe event bus for C#.
+Snork.EventBus is a publish/subscribe event bus for .NET.
 <img src="EventBus-Publish-Subscribe.png" width="500" height="187"/>
 
-It is a port of the EventBus project for Android/Java
+It is a port of the EventBus project for Android/Java.
 
 
 EventBus...
@@ -15,10 +15,10 @@ EventBus...
     * avoids complex and error-prone dependencies and life cycle issues
  * makes your code simpler
  * is fast
- * is tiny (~45k dll)
+ * is tiny
  * has advanced features like delivery threads, subscriber priorities, etc.
 
-Snork.EventBus in 3 steps
+Snork.EventBus In Three Steps
 -------------------
 1. Define events:
 
@@ -27,7 +27,7 @@ Snork.EventBus in 3 steps
     ```
 
 2. Prepare subscribers:
-    Declare and annotate your subscribing method, optionally specify a [thread mode](documentation/delivery-threads-threadmode.md):  
+    Declare and annotate your subscribing method, optionally specify a [thread mode](documentation/DeliveryThreadsThreadmode.md):  
 
     ```C#
     [Subscribe(ThreadMode: ThreadModeEnum.Main)]  
@@ -53,11 +53,11 @@ Snork.EventBus in 3 steps
     EventBus.Default.Post(new MessageType());
     ```
 
-Read the full [getting started guide](documentation/how-to-get-started.md).
+Read the full [getting started guide](documentation/HowToGetStarted.md).
 
-There are also some [examples](https://github.com/greenrobot-team/greenrobot-examples).
+There are also some [examples](Examples.md).
 
-**Note:** we highly recommend the [EventBus annotation processor with its subscriber index](https://greenrobot.org/eventbus/documentation/subscriber-index/).
+**Note:** we highly recommend the [EventBus annotation processor with its subscriber index](documentation/SubscriberIndex.md).
 This will avoid some reflection related problems seen in the wild.  
 
 Add EventBus to your project
@@ -82,17 +82,15 @@ implementation("org.greenrobot:eventbus-java:3.3.1")
     <version>3.3.1</version>
 </dependency>
 ```
-Homepage, Documentation, Links
+Links
 ------------------------------
-For more details please check the [EventBus website](https://greenrobot.org/eventbus). Here are some direct links you may find useful:
+Here are some documents that you may find useful:
 
-[Features](https://greenrobot.org/eventbus/features/)
+[Features](Features.md)
 
-[Documentation](https://greenrobot.org/eventbus/documentation/)
+[Documentation](documentation/Index.md)
 
-[Changelog](https://github.com/greenrobot/EventBus/releases)
-
-[FAQ](https://greenrobot.org/eventbus/documentation/faq/)
+[FAQ](documentation/FAQ.md)
 
 License
 -------

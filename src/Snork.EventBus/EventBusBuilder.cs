@@ -70,9 +70,6 @@ namespace Snork.EventBus
 
         /// <summary>
         ///     Fails if an subscriber throws an exception (default: false).
-        ///     <p />
-        ///     Tip: Use this with BuildConfig.DEBUG to let the app crash in DEBUG mode (only). This way, you won't miss
-        ///     exceptions during development.
         /// </summary>
         public EventBusBuilder WithThrowSubscriberException(bool throwSubscriberException)
         {
@@ -152,20 +149,11 @@ namespace Snork.EventBus
             return this;
         }
 
-        public ILogger Logger
-        {
-            get
-            {
-                return _logger ?? NullLogger.Instance;
-            }
-        }
+        public ILogger Logger => _logger ?? NullLogger.Instance;
 
         public IMainThreadSupport? GetMainThreadSupport()
         {
-            if (MainThreadSupport != null)
-                return MainThreadSupport;
-
-            return null;
+            return MainThreadSupport ?? null;
         }
 
         /// <summary>
